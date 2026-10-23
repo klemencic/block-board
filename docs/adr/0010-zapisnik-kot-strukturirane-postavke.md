@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Primopredajni zapisnik kot strukturirane postavke
 
 ## Kontekst in opis problema
@@ -28,25 +23,3 @@ Izbrana možnost: »Postavke«, ker je samo strukturirane postavke mogoče samod
 * Slabo, ker je priprava vselitvenega zapisnika za lastnika več dela kot nalaganje nekaj fotografij.
 * Slabo, ker je treba določiti lestvico stanj, ki je dovolj preprosta za vnos in dovolj natančna za primerjavo.
 * Slabo, ker neobičajnih predmetov vnaprej določena struktura morda ne pokrije, zato mora vsaka postavka omogočati prosto opombo.
-
-## Prednosti in slabosti možnosti
-
-### Postavke
-
-* Dobro, ker omogočajo primerjavo in povezavo z odbitki.
-* Slabo, ker zahtevajo več vnosa.
-
-### Prosto besedilo s fotografijami
-
-* Dobro, ker je vnos hiter in prilagodljiv.
-* Slabo, ker dveh besedil ni mogoče zanesljivo samodejno primerjati.
-
-### En dokument PDF ali skupina fotografij
-
-* Dobro, ker je to način, ki ga lastniki že poznajo.
-* Slabo, ker je zapisnik samo arhiv, primerjavo pa mora še vedno opraviti človek.
-
-## Dodatne informacije
-
-* Funkcionalnost F5: [02-funkcionalnosti-in-obseg.md](../02-funkcionalnosti-in-obseg.md)
-* Povezano: [ADR-0011](0011-odbitek-vezan-na-postavko-zapisnika.md)

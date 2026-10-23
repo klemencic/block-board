@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Najemnik na najemu kot ločena entiteta `LeaseTenant` z datumi
 
 ## Kontekst in opis problema
@@ -26,25 +21,3 @@ Izbrana možnost: »Ločena entiteta `LeaseTenant`«, ker edina podpira več sos
 * Dobro, ker razredi Policy najemniku dovolijo dostop samo do najemov, na katerih je naveden v `LeaseTenant`.
 * Slabo, ker je skoraj vsaka poizvedba za najemnika dodaten stik.
 * Slabo, ker je treba preverjati, da so datumi bivanja znotraj trajanja najema in da je vsota deležev enaka celotni najemnini.
-
-## Prednosti in slabosti možnosti
-
-### Ločena entiteta `LeaseTenant`
-
-* Dobro, ker natančno opiše dejansko stanje v stanovanju skozi čas.
-* Slabo, ker je model bolj zapleten.
-
-### Najemnik kot polje na najemu
-
-* Dobro, ker je najpreprostejši.
-* Slabo, ker podpira samo enega najemnika, vsaka menjava pa zahteva nov najem.
-
-### Vmesna tabela brez datumov
-
-* Dobro, ker podpira več sostanovalcev.
-* Slabo, ker ne ve, kdo je v stanovanju živel kdaj, zato delitev po dnevih bivanja ni mogoča.
-
-## Dodatne informacije
-
-* Primer delitve: [01-zasnova-resitve.md](../01-zasnova-resitve.md)
-* Povezano: [ADR-0006](0006-vloga-vezana-na-clanstvo-v-stavbi.md), [ADR-0008](0008-ena-tabela-obveznosti.md)

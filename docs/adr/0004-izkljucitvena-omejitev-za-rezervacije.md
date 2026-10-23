@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Preprečevanje prekrivanja rezervacij z izključitveno omejitvijo v bazi
 
 ## Kontekst in opis problema
@@ -27,25 +22,3 @@ Izbrana možnost: »Izključitvena omejitev v bazi«, ker edina onemogoči prekr
 * Slabo, ker omejitev zahteva razširitev `btree_gist` in migracijo s SQL, specifičnim za PostgreSQL.
 * Slabo, ker je sporočilo baze ob kršitvi splošno, zato ga mora API prepoznati in prevesti v uporabniku razumljiv odgovor.
 * Slabo, ker tedenske omejitve ur na stanovanje ni mogoče zapisati kot omejitev v bazi in ostaja v aplikaciji.
-
-## Prednosti in slabosti možnosti
-
-### Izključitvena omejitev v bazi
-
-* Dobro, ker je pravilo zagotovljeno na najnižji ravni.
-* Slabo, ker je vezano na PostgreSQL.
-
-### Preverjanje samo v aplikaciji
-
-* Dobro, ker je najpreprostejše in neodvisno od baze.
-* Slabo, ker ob hkratnih zahtevah dopusti prekrivanje.
-
-### Preverjanje v aplikaciji z zaklepanjem
-
-* Dobro, ker ob pravilni izvedbi prepreči hkratne vpise.
-* Slabo, ker je treba zaklepanje izvesti na vsaki poti vpisa, zmanjša pa tudi vzporednost zahtev za isti prostor.
-
-## Dodatne informacije
-
-* Funkcionalnost F4: [02-funkcionalnosti-in-obseg.md](../02-funkcionalnosti-in-obseg.md)
-* Povezano: [ADR-0003](0003-postgresql-kot-podatkovna-baza.md)

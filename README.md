@@ -35,7 +35,7 @@ Dokumentacija je v direktoriju [docs/](docs/):
 
 ### Arhitekturne odločitve (ADR)
 
-Arhitekturne odločitve so zapisane v [docs/adr/](docs/adr/) po predlogi [MADR](https://adr.github.io/madr/) ([adr-template.md](docs/adr/adr-template.md)).
+Arhitekturne odločitve so zapisane v [docs/adr/](docs/adr/) po minimalni predlogi [MADR](https://github.com/adr/madr/blob/develop/template/adr-template-minimal.md) ([adr-template.md](docs/adr/adr-template.md)).
 
 | ADR | Odločitev |
 | --- | --- |
@@ -56,7 +56,7 @@ Arhitekturne odločitve so zapisane v [docs/adr/](docs/adr/) po predlogi [MADR](
 | [0015](docs/adr/0015-poslovna-logika-v-storitvenih-razredih.md) | Poslovna logika v storitvenih razredih |
 | [0016](docs/adr/0016-lokalno-okolje-z-docker-compose.md) | Lokalno okolje z Docker Compose |
 
-Nove pomembne odločitve se dodajo kot nov ADR z naslednjo številko. Če se sprejeta odločitev spremeni, nastane nov ADR, ki v polju `supersedes` navede, katerega nadomešča.
+Nove pomembne odločitve se dodajo kot nov ADR z naslednjo številko. Če se sprejeta odločitev spremeni, nastane nov ADR, ki v kontekstu navede, katerega nadomešča (na primer »Nadomešča [ADR-0014](docs/adr/0014-vrsta-opravil-z-gonilnikom-database.md)«), v starem ADR pa se pod naslov doda opomba »Nadomeščeno z ADR-XXXX«.
 
 ## Struktura repozitorija
 

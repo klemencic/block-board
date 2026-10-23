@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Ena tabela obveznosti za vse vrste zneskov
 
 ## Kontekst in opis problema
@@ -27,25 +22,3 @@ Izbrana možnost: »Ena tabela `Charge`«, ker ima najemnik en obračun in eno s
 * Slabo, ker ima tabela več neobveznih tujih ključev, od katerih je izpolnjen največ eden, kar je treba zagotoviti z omejitvijo CHECK.
 * Slabo, ker podrobnosti posamezne vrste (na primer način delitve položnice) ostanejo v izvorni tabeli, zato je za prikaz podrobnosti potreben dodaten stik.
 * Slabo, ker izdane obveznosti ni dovoljeno spreminjati, zato je popravek vedno nov zapis, kar poveča število vrstic.
-
-## Prednosti in slabosti možnosti
-
-### Ena tabela `Charge`
-
-* Dobro, ker je vsa logika plačil na enem mestu.
-* Slabo, ker je povezava na izvor manj stroga kot pri ločenih tabelah.
-
-### Ločene tabele po vrsti
-
-* Dobro, ker ima vsaka vrsta točno svoja polja.
-* Slabo, ker je treba roke, plačila in zamude obravnavati štirikrat, obračun pa sestaviti iz štirih poizvedb.
-
-### Ločene tabele s pogledom
-
-* Dobro, ker ohrani ločene tabele in hkrati omogoči skupen prikaz.
-* Slabo, ker pogled podatke samo bere. Označevanje plačil in poslovna pravila ostanejo razpršena po štirih tabelah.
-
-## Dodatne informacije
-
-* Funkcionalnost F2 (mesečne obveznosti): [02-funkcionalnosti-in-obseg.md](../02-funkcionalnosti-in-obseg.md)
-* Povezano: [ADR-0007](0007-zneski-v-centih.md), [ADR-0009](0009-locena-entiteta-leasetenant.md), [ADR-0013](0013-shranjena-cena-rezervacije.md)

@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Avtentikacija SPA s sejnim piškotkom (Laravel Sanctum)
 
 ## Kontekst in opis problema
@@ -27,25 +22,3 @@ Izbrana možnost: »Sejni piškotek (Laravel Sanctum)«, ker je piškotek označ
 * Slabo, ker morata biti SPA in API na istem izvoru ali istem nadrejenem domenskem imenu, kar omejuje razmestitev.
 * Slabo, ker je zaradi piškotkov potrebna zaščita CSRF pri vsaki zahtevi, ki spreminja podatke.
 * Slabo, ker bo mobilna aplikacija potrebovala drug mehanizem (žetone API Sanctum), torej bosta kasneje v uporabi dva načina prijave.
-
-## Prednosti in slabosti možnosti
-
-### Sejni piškotek (Sanctum)
-
-* Dobro, ker je varen privzeto in vgrajen v Laravel.
-* Slabo, ker ni primeren za odjemalce zunaj brskalnika.
-
-### Žeton JWT v `localStorage`
-
-* Dobro, ker strežnik ne hrani stanja seje in deluje tudi med različnimi domenami.
-* Slabo, ker lahko žeton prebere vsaka skripta na strani, odjava pa ga ne razveljavi, dokler ne poteče.
-
-### OAuth 2 strežnik (Passport)
-
-* Dobro, ker podpira zunanje odjemalce in različne načine pooblaščanja.
-* Slabo, ker je za lastno SPA brez zunanjih odjemalcev nepotrebno zapleten.
-
-## Dodatne informacije
-
-* Avtentikacija in avtorizacija: [04-arhitektura-in-tehnoloski-sklad.md](../04-arhitektura-in-tehnoloski-sklad.md)
-* Povezano: [ADR-0001](0001-locena-spa-in-rest-api.md), [ADR-0006](0006-vloga-vezana-na-clanstvo-v-stavbi.md)

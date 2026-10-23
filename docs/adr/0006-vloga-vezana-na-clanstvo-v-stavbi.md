@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Vloga uporabnika je vezana na članstvo v stavbi
 
 ## Kontekst in opis problema
@@ -27,25 +22,3 @@ Izbrana možnost: »Tabela `Membership`«, ker je vloga lastnost razmerja med os
 * Slabo, ker vsako preverjanje pravic potrebuje kontekst stavbe, zato ga morajo poznati vse končne točke in razredi Policy.
 * Slabo, ker mora SPA voditi izbrano stavbo in omogočiti preklop, če je uporabnik član več stavb.
 * Slabo, ker je vloga najemnika delno zapisana dvakrat (članstvo in `LeaseTenant`), zato je treba skrbeti, da sta podatka usklajena.
-
-## Prednosti in slabosti možnosti
-
-### Tabela `Membership`
-
-* Dobro, ker natančno opiše domeno.
-* Slabo, ker so preverjanja pravic nekoliko bolj zapletena.
-
-### Stolpec `role` pri uporabniku
-
-* Dobro, ker je najpreprostejši.
-* Slabo, ker oseba ne more imeti različnih vlog v različnih stavbah, za drugo vlogo bi potrebovala drug račun.
-
-### Splošni paket za vloge in dovoljenja
-
-* Dobro, ker ponuja podrobna dovoljenja in podporo za ekipe.
-* Slabo, ker so pravila BlockBoarda vezana na domeno (najemnik vidi samo svoj najem, izvajalec samo dodeljene prijave), česar splošna dovoljenja ne opišejo, zato bi razrede Policy vseeno potrebovali.
-
-## Dodatne informacije
-
-* Uporabniške vloge in pravice: [02-funkcionalnosti-in-obseg.md](../02-funkcionalnosti-in-obseg.md)
-* Povezano: [ADR-0005](0005-avtentikacija-s-sejnim-piskotkom.md), [ADR-0009](0009-locena-entiteta-leasetenant.md)

@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Lokalno razvojno okolje z Docker Compose
 
 ## Kontekst in opis problema
@@ -26,24 +21,3 @@ Izbrana možnost: »Docker Compose z lastno konfiguracijo«, ker vsak razvijalec
 * Dobro, ker Mailpit prestreže vso e-pošto in med razvojem nobeno sporočilo ne odide resničnemu prejemniku.
 * Slabo, ker Docker na Windows zahteva WSL 2, dostop do datotek iz gostitelja pa je lahko počasnejši.
 * Slabo, ker se ukazi Artisan, Composer in npm izvajajo prek `docker compose exec`, kar je manj neposredno.
-
-## Prednosti in slabosti možnosti
-
-### Docker Compose z lastno konfiguracijo
-
-* Dobro, ker je okolje ponovljivo in prilagojeno projektu (tudi frontend in delavec).
-* Slabo, ker je treba konfiguracijo vzdrževati sami.
-
-### Ročna namestitev
-
-* Dobro, ker ne potrebuje Dockerja in deluje brez vmesnega sloja.
-* Slabo, ker ima vsak razvijalec drugačne različice, namestitev pa je na vsakem sistemu drugačna.
-
-### Laravel Sail
-
-* Dobro, ker je uradna rešitev Laravel in pripravljena takoj.
-* Slabo, ker je namenjena samo zalednemu delu in je ne bi mogli preprosto prilagoditi ločenemu frontendu.
-
-## Dodatne informacije
-
-* Lokalni zagon: [04-arhitektura-in-tehnoloski-sklad.md](../04-arhitektura-in-tehnoloski-sklad.md)

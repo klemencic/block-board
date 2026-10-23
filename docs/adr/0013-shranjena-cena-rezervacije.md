@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Cena rezervacije se izračuna in shrani ob rezervaciji
 
 ## Kontekst in opis problema
@@ -26,26 +21,3 @@ Izbrana možnost: »Cena se shrani ob rezervaciji«, ker kasnejša sprememba cen
 * Dobro, ker je pravilo preklica (zaračunana polna cena po roku) mogoče uporabiti na shranjenem znesku.
 * Slabo, ker je cena podvojena (cenik in rezervacija), kar je namerna denormalizacija.
 * Slabo, ker se znižanje cene ne uporabi za že potrjene prihodnje rezervacije. Če lastnik to želi, mora rezervacije urediti ročno.
-
-## Prednosti in slabosti možnosti
-
-### Cena se shrani ob rezervaciji
-
-* Dobro, ker je dogovorjena cena nespremenljiva.
-* Slabo, ker je podatek podvojen.
-
-### Izračun iz trenutnega cenika
-
-* Dobro, ker ni podvojenih podatkov.
-* Slabo, ker sprememba cenika za nazaj spremeni zneske že potrjenih rezervacij.
-
-### Zgodovina cenika
-
-* Dobro, ker ohrani vse pretekle cene in omogoča natančen izračun za vsak trenutek.
-* Slabo, ker je za ta problem nepotrebno zapletena, saj potrebujemo samo ceno ob rezervaciji.
-
-## Dodatne informacije
-
-* Funkcionalnost F4: [02-funkcionalnosti-in-obseg.md](../02-funkcionalnosti-in-obseg.md)
-* Wireframe 2: [06-wireframes.md](../06-wireframes.md)
-* Povezano: [ADR-0008](0008-ena-tabela-obveznosti.md)

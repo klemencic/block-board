@@ -1,8 +1,3 @@
----
-status: sprejeto
-date: 2026-10-23
----
-
 # Spremembe stanja prek namenskih končnih točk s preverjanjem prehoda
 
 ## Kontekst in opis problema
@@ -27,25 +22,3 @@ Izbrana možnost: »Namenske končne točke«, ker ima vsak korak svoje vhodne p
 * Dobro, ker je API samopojasnjujoč: seznam končnih točk je hkrati seznam dovoljenih dejanj.
 * Slabo, ker je končnih točk, poti in testov več kot pri splošnem urejanju.
 * Slabo, ker vsak nov korak v procesu zahteva novo končno točko, ne le nove vrednosti stanja.
-
-## Prednosti in slabosti možnosti
-
-### Namenske končne točke
-
-* Dobro, ker je vsak korak ločeno preverjen in testiran.
-* Slabo, ker je API obsežnejši.
-
-### Splošno urejanje polja `status`
-
-* Dobro, ker je najmanj kode in sledi preprostemu vzorcu CRUD.
-* Slabo, ker je treba vsa pravila prehodov in stranske učinke izvesti v eni metodi za posodabljanje, kjer jih je lahko izpustiti.
-
-### Ena splošna končna točka za prehode
-
-* Dobro, ker je prehode mogoče opisati s tabelo stanj.
-* Slabo, ker imajo koraki različne vhodne podatke (obrazložitev zavrnitve, izvajalec in plačnik, datum odpovedi), zato validacija postane razvejana.
-
-## Dodatne informacije
-
-* Komunikacija in primeri končnih točk: [04-arhitektura-in-tehnoloski-sklad.md](../04-arhitektura-in-tehnoloski-sklad.md)
-* Povezano: [ADR-0001](0001-locena-spa-in-rest-api.md), [ADR-0015](0015-poslovna-logika-v-storitvenih-razredih.md)
