@@ -1,0 +1,51 @@
+---
+status: sprejeto
+date: 2026-10-23
+---
+
+# Laravel kot zaledno ogrodje
+
+## Kontekst in opis problema
+
+Zaledni del mora poleg REST API-ja zagotoviti validacijo vhodnih podatkov, preverjanje pravic po vlogah, migracije sheme, opravila v ozadju (pošiljanje e-pošte), časovno določena opravila (mesečne obveznosti, opozorila pred iztekom najema, zaključevanje preteklih rezervacij) in shranjevanje fotografij. Projekt razvija ena oseba v omejenem času, zato je pomembno, koliko od tega je treba sestaviti in povezati ročno.
+
+## Obravnavane možnosti
+
+* Laravel (PHP)
+* NestJS (TypeScript)
+* Spring Boot (Java)
+
+## Odločitev
+
+Izbrana možnost: »Laravel«, ker so validacija, razredi Policy, vrsta opravil, razporejevalnik, pošiljanje e-pošte, datotečna shramba, migracije in avtentikacija za SPA (Sanctum) že del ogrodja in delujejo skupaj po istih konvencijah. Čas gre tako v domensko logiko (delitev položnic, varščina, rezervacije) in ne v povezovanje ločenih paketov. Ogrodje je stabilno in dobro dokumentirano.
+
+### Posledice
+
+* Dobro, ker je za vse potrebne zmožnosti en sam nabor konvencij in dokumentacije.
+* Dobro, ker delavec vrste in razporejevalnik tečeta iz iste kode kot API, zato poslovna pravila niso podvojena.
+* Dobro, ker ima Laravel dobro podporo za testiranje (Pest, testna baza, lažna e-pošta in vrsta opravil).
+* Slabo, ker je backend v PHP, frontend pa v TypeScriptu, zato tipov podatkov ni mogoče deliti med deloma in jih je treba usklajevati ročno.
+* Slabo, ker Eloquent skrije poizvedbe, zato je treba paziti na težavo N+1 in poizvedbe preverjati.
+* Slabo, ker smo vezani na cikel izdaj ogrodja in bo treba nadgradnje glavnih različic opraviti sproti.
+
+## Prednosti in slabosti možnosti
+
+### Laravel
+
+* Dobro, ker vsebuje vse potrebne gradnike v enem ogrodju.
+* Slabo, ker je drug jezik kot na frontendu.
+
+### NestJS
+
+* Dobro, ker je isti jezik (TypeScript) kot na frontendu in je mogoče deliti tipe.
+* Slabo, ker je treba ORM, vrsto opravil in razporejevalnik izbrati in povezati posebej, vrsta opravil (BullMQ) pa zahteva še Redis.
+
+### Spring Boot
+
+* Dobro, ker je zelo zrelo ogrodje z močnim tipiziranjem.
+* Slabo, ker zahteva več konfiguracije in ponavljajoče se kode, kar je za projekt te velikosti in enega razvijalca preveč.
+
+## Dodatne informacije
+
+* Tehnološki sklad: [04-arhitektura-in-tehnoloski-sklad.md](../04-arhitektura-in-tehnoloski-sklad.md)
+* Povezano: [ADR-0014](0014-vrsta-opravil-z-gonilnikom-database.md), [ADR-0015](0015-poslovna-logika-v-storitvenih-razredih.md)
