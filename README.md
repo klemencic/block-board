@@ -58,6 +58,10 @@ Arhitekturne odločitve so zapisane v [docs/adr/](docs/adr/) po minimalni predlo
 
 Nove pomembne odločitve se dodajo kot nov ADR z naslednjo številko. Če se sprejeta odločitev spremeni, nastane nov ADR, ki v kontekstu navede, katerega nadomešča (na primer »Nadomešča [ADR-0014](docs/adr/0014-vrsta-opravil-z-gonilnikom-database.md)«), v starem ADR pa se pod naslov doda opomba »Nadomeščeno z ADR-XXXX«.
 
+## Razvojni proces
+
+Veja `main` je zaščitena. Spremembe se razvijajo na ločenih vejah in se v `main` združijo prek pull requesta. Prisilno prepisovanje zgodovine in brisanje veje `main` nista dovoljena.
+
 ## Struktura repozitorija
 
 ```text
