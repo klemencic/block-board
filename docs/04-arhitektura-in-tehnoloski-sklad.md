@@ -174,26 +174,33 @@ Začetni podatki ustvarijo eno demo stavbo s stanovanji, skupnimi prostori, vrst
 
 ## Arhitekturne odločitve
 
-Vsaka odločitev iz spodnje tabele je podrobneje opisana kot ADR v direktoriju [adr/](adr/).
+Ključne arhitekturne odločitve so podrobneje opisane kot ADR v direktoriju [adr/](adr/).
+
+| Odločitev | Izbrano | Alternativa | Utemeljitev | ADR |
+| --- | --- | --- | --- | --- |
+| Ločitev frontenda in backenda | Ločena Vue SPA in REST API | Laravel z Inertia.js ali strežniško izrisane strani | Dva jasno ločena dela z dokumentiranim vmesnikom. Isti API lahko kasneje uporablja mobilna aplikacija. Cena je nekaj več začetnega dela. | [0001](adr/0001-locena-spa-in-rest-api.md) |
+| Zaledno ogrodje | Laravel | NestJS, Spring Boot | Validacija, pravice, vrsta opravil in razporejevalnik so že vključeni, zato ni treba sestavljati ločenih paketov. Ogrodje je stabilno in dobro dokumentirano. | [0002](adr/0002-laravel-kot-zaledno-ogrodje.md) |
+| Podatkovna baza | PostgreSQL | MySQL, MongoDB | Podatki so relacijski in finančni. PostgreSQL poleg transakcij in tujih ključev ponuja izključitvene omejitve nad časovnimi razponi in delne enolične indekse, ki jih rešitev potrebuje. | [0003](adr/0003-postgresql-kot-podatkovna-baza.md) |
+| Avtentikacija | Sejni piškotek (Sanctum) | Žeton JWT v `localStorage` | Žeton ni dostopen skriptam v brskalniku, odjava pa sejo dejansko konča na strežniku. | [0004](adr/0004-avtentikacija-s-sejnim-piskotkom.md) |
+| Mesto vloge | Članstvo v stavbi | Stolpec `role` pri uporabniku | Ista oseba ima lahko v različnih stavbah različne vloge, na primer najemnik v eni in izvajalec v drugi. | [0005](adr/0005-vloga-vezana-na-clanstvo-v-stavbi.md) |
+| Spremembe stanja | Namenske končne točke s preverjanjem prehoda | Splošno urejanje polja `status` | Neveljaven korak ni mogoč, vsak korak ima avtorja in čas. | [0006](adr/0006-namenske-koncne-tocke-za-prehode-stanj.md) |
+| Poslovna logika | Storitveni razredi | Logika v krmilnikih | Pravila za delitev položnic in obračun varščine je mogoče testirati ločeno od HTTP-ja. | [0007](adr/0007-poslovna-logika-v-storitvenih-razredih.md) |
+| Lokalno okolje | Docker Compose | Ročna namestitev PHP, Node in PostgreSQL | Vsak razvijalec dobi enako okolje z enim ukazom, ne glede na operacijski sistem. | [0008](adr/0008-lokalno-okolje-z-docker-compose.md) |
+
+### Druge odločitve o zasnovi
+
+Naslednje odločitve se nanašajo na podatkovni model, domenska pravila in nastavitve posameznih delov sistema. Ne določajo zgradbe sistema in jih je mogoče spremeniti brez večjih posegov v arhitekturo, zato niso zapisane kot ADR.
 
 | Odločitev | Izbrano | Alternativa | Utemeljitev |
 | --- | --- | --- | --- |
-| Ločitev frontenda in backenda | Ločena Vue SPA in REST API | Laravel z Inertia.js ali strežniško izrisane strani | Dva jasno ločena dela z dokumentiranim vmesnikom. Isti API lahko kasneje uporablja mobilna aplikacija. Cena je nekaj več začetnega dela. |
-| Zaledno ogrodje | Laravel | NestJS, Spring Boot | Validacija, pravice, vrsta opravil in razporejevalnik so že vključeni, zato ni treba sestavljati ločenih paketov. Ogrodje je stabilno in dobro dokumentirano. |
-| Podatkovna baza | PostgreSQL | MySQL, MongoDB | Podatki so relacijski in finančni. PostgreSQL poleg transakcij in tujih ključev ponuja izključitvene omejitve nad časovnimi razponi in delne enolične indekse, ki jih rešitev potrebuje. |
 | Preprečevanje prekrivanja rezervacij | Izključitvena omejitev v bazi | Preverjanje samo v aplikaciji | Preverjanje v aplikaciji odpove, ko dve zahtevi prispeta hkrati. Omejitev v bazi prekrivanje onemogoči v vsakem primeru. |
-| Avtentikacija | Sejni piškotek (Sanctum) | Žeton JWT v `localStorage` | Žeton ni dostopen skriptam v brskalniku, odjava pa sejo dejansko konča na strežniku. |
-| Mesto vloge | Članstvo v stavbi | Stolpec `role` pri uporabniku | Ista oseba ima lahko v različnih stavbah različne vloge, na primer najemnik v eni in izvajalec v drugi. |
 | Zapis denarja | Cela števila v centih | Decimalni tip ali plavajoča vejica | Ni zaokrožitvenih napak, vsota deležev je vedno natanko enaka položnici. |
 | Ena tabela obveznosti | `Charge` z vrsto in povezavo na izvor | Ločene tabele za najemnino, stroške in rezervacije | Najemnik ima en mesečni obračun in eno stanje dolga, ne glede na izvor zneska. |
 | Najemnik na najemu | Ločena entiteta `LeaseTenant` z datumi | Najemnik kot polje na najemu | Podpira več sostanovalcev in menjavo enega od njih brez novega najema. Datumi omogočajo delitev stroškov po dnevih bivanja. |
 | Zapisnik kot postavke | Vrstica za vsak par prostor–predmet | Prosto besedilo ali ena datoteka PDF | Samo strukturirane postavke je mogoče samodejno primerjati med vselitvijo in izselitvijo. |
 | Odbitek vezan na postavko | Obvezna povezava na postavko zapisnika | Prost znesek z opisom | Vsak odbitek ima dokaz, najemnik pa natanko ve, čemu ugovarja. |
-| Spremembe stanja | Namenske končne točke s preverjanjem prehoda | Splošno urejanje polja `status` | Neveljaven korak ni mogoč, vsak korak ima avtorja in čas. |
 | Cena rezervacije | Shranjena ob rezervaciji | Izračun iz trenutnega cenika | Kasnejša sprememba cenika ne spremeni že potrjenih rezervacij. |
 | Vrsta opravil | Gonilnik `database` | Redis | Ena storitev manj za zagon. Obremenitev je majhna, zamenjava gonilnika je kasneje stvar nastavitve. |
-| Poslovna logika | Storitveni razredi | Logika v krmilnikih | Pravila za delitev položnic in obračun varščine je mogoče testirati ločeno od HTTP-ja. |
-| Lokalno okolje | Docker Compose | Ročna namestitev PHP, Node in PostgreSQL | Vsak razvijalec dobi enako okolje z enim ukazom, ne glede na operacijski sistem. |
 
 ## Možnosti nadaljnjega razvoja
 
