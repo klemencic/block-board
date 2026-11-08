@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ApartmentController;
 use App\Http\Controllers\Api\AttachmentController;
+use App\Http\Controllers\Api\RepairActionController;
 use App\Http\Controllers\Api\RepairRequestController;
 use App\Http\Controllers\Api\BuildingChargeController;
 use App\Http\Controllers\Api\ChargeController;
@@ -34,6 +35,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/buildings/{building}/repair-requests', [RepairRequestController::class, 'store']);
     Route::get('/repair-requests/{repair}', [RepairRequestController::class, 'show']);
     Route::get('/attachments/{attachment}', [AttachmentController::class, 'show']);
+    Route::get('/buildings/{building}/contractors', [RepairActionController::class, 'contractors']);
+    Route::post('/repair-requests/{repair}/confirm', [RepairActionController::class, 'confirm']);
+    Route::post('/repair-requests/{repair}/reject', [RepairActionController::class, 'reject']);
+    Route::post('/repair-requests/{repair}/payer', [RepairActionController::class, 'payer']);
+    Route::post('/repair-requests/{repair}/assign', [RepairActionController::class, 'assign']);
 
     Route::get('/buildings/{building}/utility-bills', [UtilityBillController::class, 'index']);
     Route::post('/buildings/{building}/utility-bills/preview', [UtilityBillController::class, 'preview']);

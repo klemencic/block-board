@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\BillSplitter;
 use App\Services\BookingService;
 use App\Services\ChargeGenerator;
+use App\Services\RepairWorkflow;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
@@ -88,6 +89,39 @@ class DatabaseSeeder extends Seeder
         $this->seedCharges($building);
         $this->seedBills($building, $landlord);
         $this->seedBookings($building);
+        $this->seedRepairs($building, $landlord);
+    }
+
+    /**
+     * Prijave okvar kot v wireframih: 4 odprte (1B, 2C, 3A, 4A), od tega 1 čaka na potrditev (2C, WF-03).
+     */
+    private function seedRepairs(Building $building, User $landlord): void
+    {
+        $workflow = app(RepairWorkflow::class);
+        $user = fn (string $email) => User::where('email', $email)->firstOrFail();
+        $apartment = fn (string $label) => $building->apartments()->where('label', $label)->value('id');
+        $category = fn (string $name) => RepairCategory::where('name', $name)->value('id');
+        $breznik = $user('breznik@blockboard.test');
+        $hribar = $user('hribar@blockboard.test');
+
+        $report = fn (string $email, string $label, string $title, string $description, string $cat) => $workflow->report($building, $user($email), [
+            'title' => $title, 'description' => $description, 'category_id' => $category($cat), 'apartment_id' => $apartment($label),
+        ]);
+
+        $report('jan@blockboard.test', '2C', 'Bojler ne greje vode',
+            'Od sinoči iz pip teče samo hladna voda. Na bojlerju v kopalnici sveti rdeča lučka, varovalka v omarici ni izpadla.',
+            'Ogrevanje in topla voda');
+
+        $leak = $report('marko@blockboard.test', '1B', 'Kaplja pipa v kuhinji', 'Pipa nad koritom ves čas kaplja, tudi ko je zaprta do konca.', 'Vodovod in odtoki');
+        $workflow->confirm($leak, $landlord);
+        $workflow->assign($leak, $landlord, $breznik);
+
+        $socket = $report('maja@blockboard.test', '3A', 'Vtičnica v dnevni sobi ne deluje', 'Vtičnica ob oknu ne deluje, ostale v sobi delujejo.', 'Elektrika');
+        $workflow->confirm($socket, $landlord);
+        $workflow->assign($socket, $landlord, $hribar);
+
+        $window = $report('nina@blockboard.test', '4A', 'Okno v spalnici se ne zapre', 'Kljuka se zatika, okna ni mogoče popolnoma zapreti.', 'Okna in vrata');
+        $workflow->confirm($window, $landlord);
     }
 
     /**
