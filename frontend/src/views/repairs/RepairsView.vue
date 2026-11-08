@@ -62,7 +62,10 @@ const title = computed(() => (auth.role === 'tenant' ? 'Prijave okvar' : auth.ro
         >
           <td class="px-6 py-4 font-mono text-muted">{{ repair.number }}</td>
           <td class="px-6 py-4 font-medium">{{ repair.title }}</td>
-          <td class="px-6 py-4">{{ repair.location.label }}</td>
+          <td class="px-6 py-4">
+            {{ repair.location.label }}
+            <p v-if="auth.role === 'contractor'" class="text-sm text-muted">{{ repair.building.address }}</p>
+          </td>
           <td class="px-6 py-4 text-muted">{{ repair.category.name }}</td>
           <td class="px-6 py-4"><StatusChip :tone="statusTone[repair.status]">{{ repair.status_label }}</StatusChip></td>
           <td class="px-6 py-4 font-mono text-sm text-muted">{{ formatDateTime(repair.created_at) }}</td>

@@ -113,7 +113,7 @@ it('najemnina nima izvora, manjkajoč izvor je napaka 404 s sporočilom', functi
         ->assertNotFound()
         ->assertJsonPath('message', 'Ta obveznost nima povezanega izvora.');
 
-    $utility = charge($this->me, ['type' => ChargeType::Utility, 'bill_share_id' => 999999]);
+    $utility = charge($this->me, ['type' => ChargeType::Utility, 'bill_share_id' => null]);
     $this->actingAs($this->me->user)->getJson("/api/charges/{$utility->id}/source")
         ->assertNotFound()
         ->assertJsonPath('message', 'Izvor obveznosti ni bil najden.');
