@@ -46,6 +46,13 @@ export function parseMoney(input: string): number | null {
   return Math.round(Number(normalized) * 100)
 }
 
+/** Slovenska dvojina in množina: 1 dan, 2 dneva, 3 dnevi, 5 dni (tudi 101 dan, 102 dneva …). */
+export function daysLabel(days: number): string {
+  const mod = days % 100
+  const word = mod === 1 ? 'dan' : mod === 2 ? 'dneva' : mod === 3 || mod === 4 ? 'dnevi' : 'dni'
+  return `${days} ${word}`
+}
+
 export function todayIso(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
