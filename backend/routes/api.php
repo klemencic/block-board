@@ -18,4 +18,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apartments/{apartment}/leases', [LeaseController::class, 'store']);
     Route::get('/leases/{lease}', [LeaseController::class, 'show']);
     Route::post('/leases/{lease}/activate', [LeaseController::class, 'activate']);
+    Route::post('/leases/{lease}/give-notice', [LeaseController::class, 'giveNotice']);
 });

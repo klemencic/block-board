@@ -51,6 +51,12 @@ class Lease extends Model
         $query->whereIn('status', LeaseStatus::occupying());
     }
 
+    /** Sostanovalci, ki še živijo v stanovanju. */
+    public function currentTenants(): HasMany
+    {
+        return $this->tenants()->whereNull('moved_out_on');
+    }
+
     public function hasTenant(User $user): bool
     {
         return $this->tenants()->where('user_id', $user->id)->exists();

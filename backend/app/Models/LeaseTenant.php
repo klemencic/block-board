@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LeaseTenant extends Model
 {
-    protected $fillable = ['lease_id', 'user_id', 'rent_share_cents', 'moved_in_on', 'moved_out_on'];
+    protected $fillable = ['lease_id', 'user_id', 'rent_share_cents', 'moved_in_on', 'moved_out_on', 'notice_confirmed_at'];
 
     protected function casts(): array
     {
@@ -15,6 +15,7 @@ class LeaseTenant extends Model
             'rent_share_cents' => 'integer',
             'moved_in_on' => 'date',
             'moved_out_on' => 'date',
+            'notice_confirmed_at' => 'datetime',
         ];
     }
 

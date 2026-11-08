@@ -59,6 +59,16 @@ class LeaseController extends Controller
         return LeaseResource::make($lease->load(['apartment', 'tenants.user']));
     }
 
+    /** Najemnik potrdi odpoved najema (US-02). */
+    public function giveNotice(Request $request, Lease $lease): LeaseResource
+    {
+        Gate::authorize('giveNotice', $lease);
+
+        $lease = $this->lifecycle->confirmNotice($lease, $request->user());
+
+        return LeaseResource::make($lease->load(['apartment', 'tenants.user']));
+    }
+
     public function activate(Lease $lease): LeaseResource
     {
         Gate::authorize('activate', $lease);
