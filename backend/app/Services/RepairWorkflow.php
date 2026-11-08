@@ -13,8 +13,12 @@ use App\Models\RepairEvent;
 use App\Models\RepairRequest;
 use App\Models\User;
 use App\Notifications\RepairAssigned;
+use App\Notifications\RepairCompleted;
 use App\Notifications\RepairReported;
+use App\Notifications\RepairScheduled;
 use App\Notifications\RepairStatusChanged;
+use App\Support\Money;
+use Carbon\CarbonInterface;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -122,6 +126,58 @@ class RepairWorkflow
             ['contractor_id' => $contractor->id], $contractor->name);
 
         $contractor->notify(new RepairAssigned($repair));
+
+        return $repair;
+    }
+
+    /**
+     * Izvajalec sporoči termin izvedbe v prihodnosti (US-11, #125).
+     * Najemnik in lastnik prejmeta e-pošto s terminom.
+     */
+    public function schedule(RepairRequest $repair, User $contractor, CarbonInterface $scheduledAt): RepairRequest
+    {
+        if ($scheduledAt->lte(now())) {
+            throw ValidationException::withMessages(['scheduled_at' => 'Termin izvedbe mora biti v prihodnosti.']);
+        }
+
+        $repair = $this->step($repair, $contractor, [RepairStatus::Assigned], RepairStatus::Scheduled,
+            ['scheduled_at' => $scheduledAt], 'termin '.$scheduledAt->format('j. n. Y \o\b H:i'));
+
+        Notification::send($this->landlords($repair->building_id), new RepairScheduled($repair));
+
+        return $repair;
+    }
+
+    /**
+     * Izvajalec odda poročilo s stroškom in vsaj eno fotografijo (US-11, #126).
+     * Ob ponovni oddaji po vrnitvi v popravek se prejšnje fotografije izvedbe zamenjajo.
+     *
+     * @param  list<UploadedFile>  $photos
+     */
+    public function complete(RepairRequest $repair, User $contractor, int $costCents, array $photos): RepairRequest
+    {
+        if ($costCents < 0) {
+            throw ValidationException::withMessages(['cost_cents' => 'Strošek ne sme biti negativen.']);
+        }
+        if (count($photos) === 0) {
+            throw ValidationException::withMessages(['photos' => 'Priložite vsaj eno fotografijo opravljenega dela.']);
+        }
+        if ($repair->status !== RepairStatus::Scheduled) {
+            throw new WorkflowException('Kot opravljen je mogoče označiti samo nalog z dogovorjenim terminom.');
+        }
+
+        $previous = $repair->attachments()->where('context', 'completion')->get();
+
+        $repair = DB::transaction(function () use ($repair, $contractor, $costCents, $photos) {
+            $this->storePhotos($repair, $contractor, $photos, 'completion');
+
+            return $this->step($repair, $contractor, [RepairStatus::Scheduled], RepairStatus::Done,
+                ['cost_cents' => $costCents], 'strošek '.Money::format($costCents).', '.count($photos).' fotografij');
+        });
+
+        $previous->each(fn (Attachment $a) => $this->deletePhoto($a));
+
+        Notification::send($this->landlords($repair->building_id), new RepairCompleted($repair));
 
         return $repair;
     }
