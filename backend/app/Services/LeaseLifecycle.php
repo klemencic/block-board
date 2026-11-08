@@ -21,7 +21,10 @@ use Illuminate\Support\Facades\Notification;
  */
 class LeaseLifecycle
 {
-    public function __construct(private readonly TenantInviter $inviter) {}
+    public function __construct(
+        private readonly TenantInviter $inviter,
+        private readonly ChargeGenerator $charges,
+    ) {}
 
     /**
      * Nov najem v stanju osnutek. Osnutek ne ustvarja obveznosti.
@@ -91,7 +94,10 @@ class LeaseLifecycle
             throw new WorkflowException('Stanovanje že ima aktiven najem.');
         }
 
-        return $lease->refresh();
+        // Obveznost za tekoči mesec (sorazmerno, če se je najem začel med mesecem).
+        $this->charges->generateForLease($lease->refresh());
+
+        return $lease;
     }
 
     /**
