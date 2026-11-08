@@ -15,7 +15,17 @@ const soon = () => import('@/views/ComingSoonView.vue')
 
 const appRoutes: RouteRecordRaw[] = [
   { path: 'pregled', component: soon, meta: { title: 'Pregled stavbe', roles: ['landlord'] } },
-  { path: 'najemi', component: soon, meta: { title: 'Najemi', roles: ['landlord'] } },
+  { path: 'najemi', component: () => import('@/views/landlord/LeasesView.vue'), meta: { roles: ['landlord'] } },
+  {
+    path: 'najemi/nov',
+    component: () => import('@/views/landlord/LeaseCreateView.vue'),
+    meta: { roles: ['landlord'] },
+  },
+  {
+    path: 'najemi/:id(\\d+)',
+    component: () => import('@/views/landlord/LeaseDetailView.vue'),
+    meta: { roles: ['landlord'] },
+  },
   { path: 'obveznosti', component: soon, meta: { title: 'Obveznosti', roles: ['landlord'] } },
   { path: 'poloznice', component: soon, meta: { title: 'Položnice', roles: ['landlord'] } },
   { path: 'register', component: soon, meta: { title: 'Register najemnikov', roles: ['landlord'] } },
@@ -31,6 +41,7 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/prijava', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
+    { path: '/povabilo/:token', component: () => import('@/views/InvitationView.vue'), meta: { public: true } },
     { path: '/', component: AppLayout, children: appRoutes },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

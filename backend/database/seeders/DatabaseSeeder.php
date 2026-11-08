@@ -2,10 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\LeaseStatus;
 use App\Enums\Payer;
 use App\Enums\Role;
 use App\Models\Apartment;
 use App\Models\Building;
+use App\Models\Lease;
+use App\Models\LeaseTenant;
 use App\Models\Membership;
 use App\Models\RepairCategory;
 use App\Models\SharedSpace;
@@ -76,8 +79,61 @@ class DatabaseSeeder extends Seeder
             $this->member($this->user($name, $email, $phone), $building, Role::Contractor);
         }
 
-        $tenant = $this->user('Jan Potočnik', 'jan@blockboard.test', '040 123 456');
-        $this->member($tenant, $building, Role::Tenant);
+        $this->seedLeases($building);
+    }
+
+    /**
+     * Najemi kot v wireframu »Pregled stavbe«: 10 od 12 stanovanj je zasedenih,
+     * 2B je v odpovednem roku, 1B in 4A se iztekata v naslednjih 60 dneh.
+     */
+    private function seedLeases(Building $building): void
+    {
+        $today = now()->startOfDay();
+        $apartments = $building->apartments()->get()->keyBy('label');
+
+        $leases = [
+            // stanovanje, najemniki [ime, e-naslov, telefon], najemnina, začetek, konec, stanje
+            ['1A', [['Ana Kovač', 'ana@blockboard.test', '040 111 001']], 52000, '-14 months', null, LeaseStatus::Active],
+            ['1B', [['Marko Zupan', 'marko@blockboard.test', '040 111 002']], 42000, '-11 months', '+22 days', LeaseStatus::Active],
+            ['2A', [['Luka Novak', 'luka@blockboard.test', '040 111 003'], ['Eva Horvat', 'eva@blockboard.test', '040 111 004']], 75000, '-20 months', null, LeaseStatus::Active],
+            ['2B', [['Tina Krajnc', 'tina@blockboard.test', '040 111 005']], 45000, '-9 months', null, LeaseStatus::InNotice],
+            ['2C', [['Jan Potočnik', 'jan@blockboard.test', '040 123 456'], ['Nik Golob', 'nik@blockboard.test', '040 111 006'], ['Sara Mlakar', 'sara@blockboard.test', '040 111 007']], 90000, '-4 months', '+10 months', LeaseStatus::Active],
+            ['3A', [['Maja Kos', 'maja@blockboard.test', '040 111 008']], 60000, '-6 months', '+9 months', LeaseStatus::Active],
+            ['3B', [['Peter Vidmar', 'peter@blockboard.test', '040 111 009']], 52000, '-30 months', null, LeaseStatus::Active],
+            ['4A', [['Nina Bizjak', 'nina@blockboard.test', '040 111 010'], ['Rok Turk', 'rok@blockboard.test', '040 111 011']], 80000, '-23 months', '+37 days', LeaseStatus::Active],
+            ['4B', [['Gregor Kralj', 'gregor@blockboard.test', '040 111 012']], 55000, '-8 months', null, LeaseStatus::Active],
+            ['4C', [['Urška Petek', 'urska@blockboard.test', '040 111 013']], 48000, '-2 months', '+5 months', LeaseStatus::Active],
+        ];
+
+        foreach ($leases as [$label, $tenants, $rent, $start, $end, $status]) {
+            $startsOn = $today->copy()->modify($start)->startOfMonth();
+            $lease = Lease::create([
+                'apartment_id' => $apartments[$label]->id,
+                'starts_on' => $startsOn,
+                'ends_on' => $end ? $today->copy()->modify($end) : null,
+                'notice_period_days' => 30,
+                'monthly_rent_cents' => $rent,
+                'deposit_cents' => $rent * 2,
+                'status' => $status,
+                'notice_given_on' => $status === LeaseStatus::InNotice ? $today->copy()->subDays(23) : null,
+                'terminates_on' => $status === LeaseStatus::InNotice ? $today->copy()->addDays(7) : null,
+            ]);
+
+            $share = intdiv($rent, count($tenants));
+            foreach ($tenants as $i => [$name, $email, $phone]) {
+                $user = $this->user($name, $email, $phone);
+                $this->member($user, $building, Role::Tenant);
+
+                LeaseTenant::create([
+                    'lease_id' => $lease->id,
+                    'user_id' => $user->id,
+                    // Ostanek centov dobi prvi najemnik, da je vsota enaka najemnini.
+                    'rent_share_cents' => $share + ($i === 0 ? $rent - $share * count($tenants) : 0),
+                    // Sara Mlakar se je v 2C vselila pozneje (primer iz wireframa za položnice).
+                    'moved_in_on' => $email === 'sara@blockboard.test' ? $startsOn->copy()->addMonth()->addDays(15) : $startsOn,
+                ]);
+            }
+        }
     }
 
     /**
