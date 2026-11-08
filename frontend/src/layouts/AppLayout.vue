@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { leasesApi } from '@/api/leases'
+import { overviewApi } from '@/api/overview'
 import { navigation } from '@/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { useBadgesStore } from '@/stores/badges'
@@ -35,6 +36,18 @@ const subtitle = computed(() => {
   if (m.role === 'landlord') return `${m.building.apartments_count} stanovanj · ${m.role_label}`
   return `${auth.user?.name} · ${m.role_label}`
 })
+
+// Številke ob postavkah menija (npr. odprte prijave okvar), osvežene ob vsaki menjavi strani.
+async function loadBadges() {
+  if (!auth.buildingId) return
+  try {
+    const counts = await overviewApi.badges(auth.buildingId)
+    Object.entries(counts).forEach(([path, value]) => badges.set(path, value))
+  } catch {
+    // Številke niso ključne za delovanje strani.
+  }
+}
+watch(() => [auth.buildingId, router.currentRoute.value.path], loadBadges, { immediate: true })
 
 async function logout() {
   await auth.logout()
