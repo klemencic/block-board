@@ -84,6 +84,22 @@ Vsi računi imajo geslo `geslo123`.
 | Najemnik (stanovanje 2C) | `jan@blockboard.test` |
 | Izvajalec del | `breznik@blockboard.test` |
 
+Demo stavba »Stavba Lipa« ustreza wireframom: 10 od 12 stanovanj je zasedenih, zamude znašajo 960,00 €, odprte so 4 prijave okvar (»Bojler ne greje vode« v 2C čaka na potrditev), v koledarju so rezervacije skupne sobe, objavljeni sta dve obvestili. Drugi najemniki imajo e-naslove oblike `ime@blockboard.test` (npr. `nik@`, `sara@`, `maja@`, `marko@`), izvajalec elektrike pa `hribar@blockboard.test`.
+
+### Implementirane funkcionalnosti (MVP)
+
+| Funkcionalnost | Zgodbe | Kje v aplikaciji |
+| --- | --- | --- |
+| F1 Najem z življenjskim ciklom | US-01, US-02 | Lastnik: *Najemi* (nov najem, aktivacija). Najemnik: *Moj najem* (odpoved s potrditvijo vseh sostanovalcev). |
+| F2 Mesečne obveznosti | US-03, US-04, US-05 | Samodejno ustvarjanje najemnin (`charges:generate`), najemnik: *Moje obveznosti*, lastnik: *Obveznosti* (plačila, dobropisi, filtri). |
+| F3 Delitev položnic | US-06, US-07 | Lastnik: *Položnice* (predogled deležev po dnevih bivanja, delitev stavbe po površini, osebah ali na enake dele). |
+| F4 Rezervacija skupnih prostorov | US-08 | *Skupni prostori* (tedenski koledar, tedenska omejitev stanovanja, cena v naslednjem obračunu). |
+| F7 Prijave okvar s pravilom plačnika | US-09 – US-12 | *Okvare* / *Prijave okvar* / *Moji nalogi* (prijava s fotografijami, potrditev in dodelitev, termin in poročilo izvajalca, zaključek z obračunom). |
+| F8 Pregled stavbe | US-13 | Lastnik: *Pregled stavbe* (zasedenost, zamude, okvare, najemi, ki se iztekajo). |
+| F9 Novice in obvestila | US-14, US-15 | *Obvestila* (objava za stavbo ali nadstropje, potrditev branja, obveščenost stanovanj). |
+
+Vsa e-pošta (povabila, odpovedi, mesečni povzetki, okvare, obvestila) se pošlje prek vrste opravil v storitvi `worker` in je vidna v Mailpit na http://localhost:8025. Časovno vodena opravila (`leases:end-due`, `charges:generate`) poganja razporejevalnik v isti storitvi, ročno pa jih zaženete z `docker compose exec api php artisan charges:generate`.
+
 ### Pogosti ukazi
 
 ```bash
