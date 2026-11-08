@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { http, errorMessage, validationErrors } from '@/api/http'
 import { repairsApi, type Payer, type Repair } from '@/api/repairs'
 import { useAuthStore } from '@/stores/auth'
+import MoneyInput from '@/components/MoneyInput.vue'
+import { photoErrors } from '@/utils/photos'
 
 // Plošča »Vaš korak« po wireframu WF-03 (US-10). Koraki izvajalca in zaključek sledijo v US-11 in US-12.
 const props = defineProps<{ repair: Repair }>()
@@ -57,6 +59,36 @@ function confirmAndAssign() {
   } else {
     if (payer.value !== props.repair.payer) run('payer', { payer: payer.value })
     run('assign', { contractor_id: contractorId.value })
+  }
+}
+
+// Izvajalec (US-11)
+const performStep = computed(() => props.repair.permissions.perform && ['assigned', 'scheduled'].includes(props.repair.status))
+const scheduledAt = ref('')
+const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+const cost = ref<number | null>(null)
+const completionFiles = ref<File[]>([])
+const fileErrors = computed(() => photoErrors(completionFiles.value))
+
+function addFiles(event: Event) {
+  completionFiles.value = [...completionFiles.value, ...Array.from((event.target as HTMLInputElement).files ?? [])]
+  ;(event.target as HTMLInputElement).value = ''
+}
+
+async function submitReport() {
+  const data = new FormData()
+  data.append('cost_cents', String(cost.value ?? 0))
+  completionFiles.value.forEach((file) => data.append('photos[]', file))
+  busy.value = true
+  error.value = null
+  try {
+    emit('updated', await repairsApi.action(props.repair.id, 'complete', data))
+    completionFiles.value = []
+  } catch (e) {
+    const errors = validationErrors(e)
+    error.value = Object.values(errors)[0]?.[0] ?? errorMessage(e)
+  } finally {
+    busy.value = false
   }
 }
 
@@ -132,7 +164,49 @@ const payerOptions: { value: Payer; label: string }[] = [
       <p class="mt-2 text-sm text-muted">Sprememba se zabeleži v časovnici.</p>
     </section>
 
-    <section v-if="!canDecide" class="card p-7 text-[15px] text-muted">
+    <!-- Izvajalec: termin izvedbe (US-11, #125) -->
+    <section v-if="repair.permissions.perform && repair.status === 'assigned'" class="card-strong p-7">
+      <p class="eyebrow">Vaš korak</p>
+      <h2 class="mt-1 text-[28px] font-semibold">Sporoči termin</h2>
+      <p class="mt-2 text-[15px] text-muted">Najemnik in lastnik prejmeta e-pošto s terminom.</p>
+      <label class="field-label mt-5" for="scheduled_at">Termin izvedbe</label>
+      <input id="scheduled_at" v-model="scheduledAt" type="datetime-local" step="900" :min="minDateTime" class="field-input font-mono" />
+      <p v-if="error" class="mt-4 rounded-lg bg-danger-soft p-3 text-danger">{{ error }}</p>
+      <button class="btn btn-primary mt-6 w-full py-3.5 text-lg" :disabled="busy || !scheduledAt" @click="run('schedule', { scheduled_at: scheduledAt })">
+        Potrdi termin
+      </button>
+    </section>
+
+    <!-- Izvajalec: poročilo o opravljenem delu (US-11, #126) -->
+    <section v-if="repair.permissions.perform && repair.status === 'scheduled'" class="card-strong p-7">
+      <p class="eyebrow">Vaš korak</p>
+      <h2 class="mt-1 text-[28px] font-semibold">Poročilo o izvedbi</h2>
+      <label class="field-label mt-5" for="cost">Strošek popravila</label>
+      <MoneyInput id="cost" v-model="cost" />
+      <span class="field-label mt-5">Fotografije opravljenega dela</span>
+      <div class="flex flex-wrap gap-2">
+        <span v-for="(file, i) in completionFiles" :key="i" class="chip font-mono text-xs">
+          {{ file.name }}
+          <button class="ml-2 text-muted hover:text-danger" aria-label="Odstrani" @click="completionFiles.splice(i, 1)">×</button>
+        </span>
+      </div>
+      <label class="btn btn-secondary mt-2 cursor-pointer">
+        + Dodaj fotografijo
+        <input type="file" accept="image/jpeg,image/png" multiple class="hidden" @change="addFiles" />
+      </label>
+      <p class="mt-2 text-sm text-muted">Vsaj ena fotografija JPG ali PNG do 10 MB. Po oddaji strošek in fotografij ni mogoče spreminjati.</p>
+      <p v-for="message in fileErrors" :key="message" class="field-error">{{ message }}</p>
+      <p v-if="error" class="mt-4 rounded-lg bg-danger-soft p-3 text-danger">{{ error }}</p>
+      <button
+        class="btn btn-primary mt-6 w-full py-3.5 text-lg"
+        :disabled="busy || cost === null || completionFiles.length === 0 || fileErrors.length > 0"
+        @click="submitReport"
+      >
+        Označi kot opravljeno
+      </button>
+    </section>
+
+    <section v-if="!canDecide && !performStep" class="card p-7 text-[15px] text-muted">
       <p class="eyebrow">Stanje</p>
       <p class="mt-2">Prijava je v stanju »{{ repair.status_label }}«. O vsaki spremembi boste obveščeni po e-pošti.</p>
     </section>
