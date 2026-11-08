@@ -11,6 +11,7 @@ export interface LeaseTenant {
   rent_share_cents: number
   moved_in_on: string
   moved_out_on: string | null
+  notice_confirmed_at: string | null
 }
 
 export interface Lease {
@@ -24,6 +25,8 @@ export interface Lease {
   deposit_cents: number
   notice_given_on: string | null
   terminates_on: string | null
+  notice_preview_terminates_on: string | null
+  building?: { id: number; name: string; address: string } | null
   apartment?: { id: number; label: string; floor: number; building_id: number }
   tenants?: LeaseTenant[]
 }
@@ -56,6 +59,8 @@ export const leasesApi = {
   get: (id: number) => http.get<{ data: Lease }>(`/api/leases/${id}`).then((r) => r.data.data),
   create: (apartmentId: number, payload: NewLease) =>
     http.post<{ data: Lease }>(`/api/apartments/${apartmentId}/leases`, payload).then((r) => r.data.data),
+  giveNotice: (id: number) =>
+    http.post<{ data: Lease }>(`/api/leases/${id}/give-notice`).then((r) => r.data.data),
   activate: (id: number) => http.post<{ data: Lease }>(`/api/leases/${id}/activate`).then((r) => r.data.data),
 }
 

@@ -3,12 +3,18 @@
 namespace App\Services;
 
 use App\Enums\LeaseStatus;
+use App\Enums\Role;
 use App\Exceptions\WorkflowException;
 use App\Models\Apartment;
 use App\Models\Lease;
 use App\Models\LeaseTenant;
+use App\Models\User;
+use App\Notifications\LeaseNoticeGiven;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Dovoljeni prehodi med stanji najema (ADR-0006, ADR-0007).
@@ -86,6 +92,106 @@ class LeaseLifecycle
         }
 
         return $lease->refresh();
+    }
+
+    /**
+     * Datum prenehanja = datum odpovedi + odpovedni rok v dneh (US-02, #98).
+     * Pri najemu za določen čas datum prenehanja ni nikoli po datumu konca.
+     */
+    public function terminationDate(Lease $lease, CarbonInterface $noticeDate): CarbonImmutable
+    {
+        $date = CarbonImmutable::parse($noticeDate->toDateString())->addDays($lease->notice_period_days);
+
+        if ($lease->ends_on && $date->greaterThan($lease->ends_on)) {
+            return CarbonImmutable::parse($lease->ends_on->toDateString());
+        }
+
+        return $date;
+    }
+
+    /**
+     * Najemnik potrdi odpoved. Ko jo potrdijo vsi sostanovalci, najem preide
+     * v odpovedni rok; datum odpovedi je dan zadnje potrditve (US-02, #97, #99).
+     */
+    public function confirmNotice(Lease $lease, User $user): Lease
+    {
+        $becameInNotice = DB::transaction(function () use ($lease, $user) {
+            $lease = Lease::whereKey($lease->id)->lockForUpdate()->firstOrFail();
+
+            if ($lease->status !== LeaseStatus::Active) {
+                throw new WorkflowException('Odpoved je mogoča samo pri aktivnem najemu.');
+            }
+
+            $tenant = $lease->currentTenants()->where('user_id', $user->id)->first();
+            if (! $tenant) {
+                throw new WorkflowException('Na tem najemu niste naveden kot najemnik.');
+            }
+
+            if (! $tenant->notice_confirmed_at) {
+                $tenant->update(['notice_confirmed_at' => now()]);
+            }
+
+            if ($lease->currentTenants()->whereNull('notice_confirmed_at')->exists()) {
+                return false;
+            }
+
+            $today = today();
+            $lease->update([
+                'status' => LeaseStatus::InNotice,
+                'notice_given_on' => $today,
+                'terminates_on' => $this->terminationDate($lease, $today),
+            ]);
+
+            return true;
+        });
+
+        $lease->refresh();
+
+        if ($becameInNotice) {
+            $this->notifyNoticeGiven($lease);
+        }
+
+        return $lease;
+    }
+
+    /**
+     * Zaključi najeme, ki jim je danes ali prej potekel odpovedni rok ali datum konca (US-02, #99).
+     *
+     * @return int število zaključenih najemov
+     */
+    public function endDueLeases(?CarbonInterface $today = null): int
+    {
+        $today = ($today ?? today())->toDateString();
+
+        $due = Lease::query()
+            ->where(fn ($q) => $q
+                ->where(fn ($q) => $q->where('status', LeaseStatus::InNotice)->whereDate('terminates_on', '<=', $today))
+                ->orWhere(fn ($q) => $q->where('status', LeaseStatus::Active)->whereNotNull('ends_on')->whereDate('ends_on', '<=', $today)))
+            ->get();
+
+        foreach ($due as $lease) {
+            DB::transaction(function () use ($lease) {
+                $endDate = $lease->terminates_on ?? $lease->ends_on;
+                $lease->update(['status' => LeaseStatus::Ended, 'terminates_on' => $endDate]);
+                $lease->tenants()->whereNull('moved_out_on')->update(['moved_out_on' => $endDate]);
+            });
+        }
+
+        return $due->count();
+    }
+
+    private function notifyNoticeGiven(Lease $lease): void
+    {
+        $lease->load('apartment.building', 'tenants.user');
+
+        $landlords = User::whereHas('memberships', fn ($q) => $q
+            ->where('building_id', $lease->apartment->building_id)
+            ->where('role', Role::Landlord))->get();
+
+        Notification::send(
+            $landlords->merge($lease->tenants->map->user)->unique('id'),
+            new LeaseNoticeGiven($lease)
+        );
     }
 
     private function ensureApartmentIsFree(Lease $lease): void

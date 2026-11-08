@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Razporejevalnik teče v storitvi worker (php artisan schedule:work).
+
+// Na dan prenehanja ali datum konca se najem zaključi (US-02).
+Schedule::command('leases:end-due')->dailyAt('00:05');

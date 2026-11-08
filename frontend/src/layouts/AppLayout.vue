@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
+import { leasesApi } from '@/api/leases'
 import { navigation } from '@/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { useBadgesStore } from '@/stores/badges'
@@ -10,6 +11,21 @@ import { useBadgesStore } from '@/stores/badges'
 const auth = useAuthStore()
 const badges = useBadgesStore()
 const router = useRouter()
+
+// Najemnik v stranskem meniju vidi oznako svojega stanovanja (»Stavba Lipa · 2C«).
+watch(
+  () => [auth.role, auth.buildingId],
+  async () => {
+    badges.apartmentLabel = null
+    if (auth.role !== 'tenant') return
+    const leases = await leasesApi.mine()
+    const current = leases.find(
+      (l) => l.building?.id === auth.buildingId && (l.status === 'active' || l.status === 'in_notice'),
+    )
+    badges.apartmentLabel = current?.apartment?.label ?? null
+  },
+  { immediate: true },
+)
 
 const items = computed(() => (auth.role ? navigation[auth.role] : []))
 

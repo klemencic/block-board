@@ -4,6 +4,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
 import LeaseStatusChip from '@/components/LeaseStatusChip.vue'
+import NoticeConfirmations from '@/components/NoticeConfirmations.vue'
 import { floorLabel, leasesApi, type Lease } from '@/api/leases'
 import { errorMessage } from '@/api/http'
 import { formatDate, formatMoney } from '@/utils/format'
@@ -75,11 +76,26 @@ async function activate() {
               <dt class="text-muted">Varščina</dt>
               <dd class="font-mono">{{ formatMoney(lease.deposit_cents) }}</dd>
             </div>
+            <div v-if="lease.notice_given_on">
+              <dt class="text-muted">Datum odpovedi</dt>
+              <dd class="font-mono">{{ formatDate(lease.notice_given_on) }}</dd>
+            </div>
             <div v-if="lease.terminates_on">
               <dt class="text-muted">Prenehanje</dt>
               <dd class="font-mono">{{ formatDate(lease.terminates_on) }}</dd>
             </div>
           </dl>
+        </section>
+
+        <section
+          v-if="lease.status === 'active' && lease.tenants?.some((t) => t.notice_confirmed_at)"
+          class="card border-warning-soft p-8"
+        >
+          <h2 class="text-2xl font-semibold">Odpoved v teku</h2>
+          <p class="mt-1 mb-4 text-muted">
+            Odpoved začne veljati, ko jo potrdijo vsi sostanovalci.
+          </p>
+          <NoticeConfirmations :tenants="lease.tenants.filter((t) => !t.moved_out_on)" />
         </section>
 
         <section class="card overflow-hidden">
