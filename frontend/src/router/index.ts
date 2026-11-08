@@ -36,7 +36,17 @@ const appRoutes: RouteRecordRaw[] = [
     meta: { roles: ['tenant'] },
   },
   { path: 'prostori', component: () => import('@/views/SpacesView.vue'), meta: { roles: ['landlord', 'tenant'] } },
-  { path: 'okvare', component: soon, meta: { title: 'Okvare', roles: ['landlord', 'tenant'] } },
+  { path: 'okvare', component: () => import('@/views/repairs/RepairsView.vue'), meta: { roles: ['landlord', 'tenant'] } },
+  {
+    path: 'okvare/nova',
+    component: () => import('@/views/repairs/RepairCreateView.vue'),
+    meta: { roles: ['landlord', 'tenant'] },
+  },
+  {
+    path: 'okvare/:id(\\d+)',
+    component: () => import('@/views/repairs/RepairDetailView.vue'),
+    meta: { roles: ['landlord', 'tenant', 'contractor'] },
+  },
   { path: 'nalogi', component: soon, meta: { title: 'Moji nalogi', roles: ['contractor'] } },
   { path: 'obvestila', component: soon, meta: { title: 'Obvestila', roles: ['landlord', 'tenant'] } },
 ]
