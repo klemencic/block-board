@@ -15,6 +15,7 @@ use App\Models\RepairCategory;
 use App\Models\SharedSpace;
 use App\Models\User;
 use App\Services\BillSplitter;
+use App\Services\BookingService;
 use App\Services\ChargeGenerator;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -86,6 +87,29 @@ class DatabaseSeeder extends Seeder
         $this->seedLeases($building);
         $this->seedCharges($building);
         $this->seedBills($building, $landlord);
+        $this->seedBookings($building);
+    }
+
+    /**
+     * Prihajajoče rezervacije, da koledar skupnih prostorov ni prazen (WF-02).
+     */
+    private function seedBookings(Building $building): void
+    {
+        $service = app(BookingService::class);
+        $room = $building->sharedSpaces()->where('name', 'Skupna soba')->first();
+        $tenant = fn (string $email) => LeaseTenant::whereHas('user', fn ($q) => $q->where('email', $email))->first();
+        $day = CarbonImmutable::tomorrow();
+
+        foreach ([
+            ['nik@blockboard.test', 0, '18:00', '20:00'],
+            ['peter@blockboard.test', 0, '10:00', '11:30'],
+            ['maja@blockboard.test', 1, '16:30', '18:00'],
+            ['ana@blockboard.test', 2, '19:00', '22:00'],
+            ['gregor@blockboard.test', 3, '10:00', '13:00'],
+        ] as [$email, $offset, $from, $to]) {
+            $date = $day->addDays($offset)->toDateString();
+            $service->book($room, $tenant($email), CarbonImmutable::parse("$date $from"), CarbonImmutable::parse("$date $to"));
+        }
     }
 
     /**
