@@ -32,6 +32,31 @@ class Announcement extends Model
         return $this->hasMany(AnnouncementRecipient::class);
     }
 
+    public function reads(): HasMany
+    {
+        return $this->hasMany(AnnouncementRead::class);
+    }
+
+    /**
+     * Obveščenost stanovanj (US-15): ciljna stanovanja so stanovanja s prejemniki ob objavi
+     * (samo nadstropje obvestila, brez praznih stanovanj). Stanovanje je obveščeno,
+     * ko branje potrdi vsaj en njegov najemnik.
+     *
+     * @return array{informed: \Illuminate\Support\Collection<int, int>, uninformed: \Illuminate\Support\Collection<int, int>}
+     */
+    public function informedApartments(): array
+    {
+        $readers = $this->reads()->pluck('user_id')->all();
+        $byApartment = $this->recipients()->get()->groupBy('apartment_id');
+
+        $informed = $byApartment->filter(fn ($recipients) => $recipients->whereIn('user_id', $readers)->isNotEmpty())->keys();
+
+        return [
+            'informed' => $informed->values(),
+            'uninformed' => $byApartment->keys()->diff($informed)->values(),
+        ];
+    }
+
     public function targetLabel(): string
     {
         return $this->floor === null ? 'Cela stavba' : ($this->floor === 0 ? 'Pritličje' : $this->floor.'. nadstropje');
