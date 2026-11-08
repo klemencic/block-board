@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\ChargeType;
 use App\Models\BillShare;
+use App\Models\Booking;
 use App\Models\Charge;
 use App\Services\ChargeSourceResolver;
 use Illuminate\Support\ServiceProvider;
@@ -50,6 +51,24 @@ class AppServiceProvider extends ServiceProvider
                     'days' => $share->days,
                     'amount_cents' => $share->amount_cents,
                 ],
+            ];
+        });
+
+        // Rezervacija skupnega prostora (US-08).
+        $sources->register(ChargeType::Booking, function (Charge $charge): ?array {
+            $booking = Booking::with('space')->find($charge->booking_id);
+            if (! $booking) {
+                return null;
+            }
+
+            return [
+                'id' => $booking->id,
+                'space_name' => $booking->space->name,
+                'starts_at' => $booking->starts_at->format('Y-m-d\TH:i'),
+                'ends_at' => $booking->ends_at->format('Y-m-d\TH:i'),
+                'hours' => round($booking->minutes() / 60, 1),
+                'price_per_hour_cents' => intdiv($booking->fee_cents * 60, max(1, $booking->minutes())),
+                'fee_cents' => $booking->fee_cents,
             ];
         });
     }

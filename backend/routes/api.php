@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ChargeController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LeaseController;
 use App\Http\Controllers\Api\MeController;
+use App\Http\Controllers\Api\SharedSpaceController;
 use App\Http\Controllers\Api\UtilityBillController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buildings/{building}/lease-tenants', [BuildingChargeController::class, 'tenants']);
     Route::post('/buildings/{building}/charges', [BuildingChargeController::class, 'store']);
     Route::post('/charges/{charge}/mark-paid', [BuildingChargeController::class, 'markPaid']);
+
+    Route::get('/buildings/{building}/shared-spaces', [SharedSpaceController::class, 'index']);
+    Route::get('/shared-spaces/{space}/availability', [SharedSpaceController::class, 'availability']);
+    Route::post('/shared-spaces/{space}/bookings', [SharedSpaceController::class, 'book']);
 
     Route::get('/buildings/{building}/utility-bills', [UtilityBillController::class, 'index']);
     Route::post('/buildings/{building}/utility-bills/preview', [UtilityBillController::class, 'preview']);
