@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\Building;
 use App\Services\AnnouncementService;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +62,40 @@ class AnnouncementController extends Controller
         return response()->json(['data' => $this->data($announcement->load('author'), true)], 201);
     }
 
+    /**
+     * Najemnik potrdi branje; ponovni klik ne ustvari novega zapisa (US-15, #136).
+     */
+    public function read(Request $request, Announcement $announcement): JsonResponse
+    {
+        Gate::authorize('view', $announcement);
+        abort_if($request->user()->isLandlordOf($announcement->building_id), 403, 'Branje potrdijo najemniki.');
+
+        AnnouncementRead::firstOrCreate(
+            ['announcement_id' => $announcement->id, 'user_id' => $request->user()->id],
+            ['read_at' => now()],
+        );
+
+        return response()->json(['data' => $this->data($announcement->load('author'), false)]);
+    }
+
+    /**
+     * Stanovanja, ki branja še niso potrdila, z imeni in telefoni najemnikov (US-15, #138).
+     */
+    public function uninformed(Announcement $announcement): JsonResponse
+    {
+        Gate::authorize('manage', $announcement->building);
+
+        $apartmentIds = $announcement->informedApartments()['uninformed'];
+        $recipients = $announcement->recipients()->whereIn('apartment_id', $apartmentIds)->with('apartment', 'user')->get();
+
+        return response()->json(['data' => $recipients->groupBy('apartment_id')->map(fn ($rows) => [
+            'id' => $rows->first()->apartment->id,
+            'label' => $rows->first()->apartment->label,
+            'floor' => $rows->first()->apartment->floor,
+            'tenants' => $rows->map(fn ($r) => ['name' => $r->user->name, 'phone' => $r->user->phone])->values(),
+        ])->sortBy('label')->values()]);
+    }
+
     private function data(Announcement $announcement, bool $forLandlord): array
     {
         $data = [
@@ -73,7 +108,17 @@ class AnnouncementController extends Controller
             'author' => $announcement->author->name,
         ];
 
+        if (! $forLandlord) {
+            $data['read_at'] = $announcement->reads()->where('user_id', request()->user()->id)->value('read_at');
+        }
+
         if ($forLandlord) {
+            $informed = $announcement->informedApartments();
+            $data['informed'] = [
+                'informed' => $informed['informed']->count(),
+                'total' => $informed['informed']->count() + $informed['uninformed']->count(),
+            ];
+
             $recipients = $announcement->recipients()->get();
             $data['delivery'] = [
                 'recipients' => $recipients->unique('user_id')->count(),

@@ -51,6 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buildings/{building}/announcements', [AnnouncementController::class, 'index']);
     Route::post('/buildings/{building}/announcements', [AnnouncementController::class, 'store']);
     Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
+    Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'read']);
+    Route::get('/announcements/{announcement}/uninformed', [AnnouncementController::class, 'uninformed']);
 
     Route::get('/buildings/{building}/utility-bills', [UtilityBillController::class, 'index']);
     Route::post('/buildings/{building}/utility-bills/preview', [UtilityBillController::class, 'preview']);
