@@ -14,7 +14,12 @@ declare module 'vue-router' {
 const soon = () => import('@/views/ComingSoonView.vue')
 
 const appRoutes: RouteRecordRaw[] = [
-  { path: 'pregled', component: soon, meta: { title: 'Pregled stavbe', roles: ['landlord'] } },
+  { path: 'pregled', component: () => import('@/views/landlord/OverviewView.vue'), meta: { roles: ['landlord'] } },
+  {
+    path: 'stanovanja/:id(\\d+)',
+    component: () => import('@/views/landlord/ApartmentView.vue'),
+    meta: { roles: ['landlord'] },
+  },
   { path: 'najemi', component: () => import('@/views/landlord/LeasesView.vue'), meta: { roles: ['landlord'] } },
   {
     path: 'najemi/nov',
