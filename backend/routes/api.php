@@ -40,6 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/repair-requests/{repair}/reject', [RepairActionController::class, 'reject']);
     Route::post('/repair-requests/{repair}/payer', [RepairActionController::class, 'payer']);
     Route::post('/repair-requests/{repair}/assign', [RepairActionController::class, 'assign']);
+    Route::post('/repair-requests/{repair}/schedule', [RepairActionController::class, 'schedule']);
+    Route::post('/repair-requests/{repair}/complete', [RepairActionController::class, 'complete']);
 
     Route::get('/buildings/{building}/utility-bills', [UtilityBillController::class, 'index']);
     Route::post('/buildings/{building}/utility-bills/preview', [UtilityBillController::class, 'preview']);
