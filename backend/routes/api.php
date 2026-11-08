@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApartmentController;
+use App\Http\Controllers\Api\BuildingChargeController;
 use App\Http\Controllers\Api\ChargeController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LeaseController;
@@ -13,6 +14,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [MeController::class, 'show']);
     Route::get('/me/leases', [LeaseController::class, 'mine']);
     Route::get('/me/charges', [ChargeController::class, 'mine']);
+
+    Route::get('/buildings/{building}/charges', [BuildingChargeController::class, 'index']);
+    Route::get('/buildings/{building}/charge-periods', [BuildingChargeController::class, 'periods']);
+    Route::get('/buildings/{building}/lease-tenants', [BuildingChargeController::class, 'tenants']);
+    Route::post('/buildings/{building}/charges', [BuildingChargeController::class, 'store']);
+    Route::post('/charges/{charge}/mark-paid', [BuildingChargeController::class, 'markPaid']);
 
     Route::get('/charges/{charge}', [ChargeController::class, 'show']);
     Route::get('/charges/{charge}/source', [ChargeController::class, 'source']);
