@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatMoney, formatPeriod, parseMoney } from './format'
+import { daysLabel, formatDate, formatMoney, formatPeriod, parseMoney } from './format'
 
 describe('formatMoney', () => {
   it('izpiše zneske v slovenski obliki', () => {
@@ -25,6 +25,16 @@ describe('formatDate', () => {
 describe('formatPeriod', () => {
   it('izpiše mesec obračuna', () => {
     expect(formatPeriod('2027-05-01')).toBe('maj 2027')
+  })
+})
+
+describe('daysLabel', () => {
+  it('uporabi pravilno slovensko obliko', () => {
+    expect(daysLabel(1)).toBe('1 dan')
+    expect(daysLabel(2)).toBe('2 dneva')
+    expect(daysLabel(4)).toBe('4 dnevi')
+    expect(daysLabel(12)).toBe('12 dni')
+    expect(daysLabel(101)).toBe('101 dan')
   })
 })
 
