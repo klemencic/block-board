@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\RepairActionController;
 use App\Http\Controllers\Api\RepairRequestController;
 use App\Http\Controllers\Api\BuildingChargeController;
+use App\Http\Controllers\Api\BuildingOverviewController;
 use App\Http\Controllers\Api\ChargeController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LeaseController;
@@ -54,6 +55,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/charges/{charge}/source', [ChargeController::class, 'source']);
 
     Route::get('/buildings/{building}/apartments', [ApartmentController::class, 'index']);
+    Route::get('/buildings/{building}/overview', [BuildingOverviewController::class, 'show']);
+    Route::get('/buildings/{building}/badges', [BuildingOverviewController::class, 'badges']);
+    Route::get('/apartments/{apartment}', [BuildingOverviewController::class, 'apartment']);
     Route::get('/buildings/{building}/leases', [LeaseController::class, 'index']);
 
     Route::post('/apartments/{apartment}/leases', [LeaseController::class, 'store']);
