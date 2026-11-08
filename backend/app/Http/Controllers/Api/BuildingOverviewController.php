@@ -63,6 +63,10 @@ class BuildingOverviewController extends Controller
 
         if ($user->isLandlordOf($building)) {
             $badges['/okvare'] = RepairRequest::where('building_id', $building->id)->whereIn('status', RepairStatus::open())->count();
+        } elseif ($user->hasRole($building, \App\Enums\Role::Tenant)) {
+            // Neprebrana obvestila (WF: »najemnik 2 neprebrani obvestili«).
+            $badges['/obvestila'] = \App\Models\Announcement::visibleToTenant($user, $building->id)
+                ->whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id))->count();
         } elseif ($user->hasRole($building, \App\Enums\Role::Contractor)) {
             $badges['/nalogi'] = RepairRequest::where('building_id', $building->id)->where('contractor_id', $user->id)
                 ->whereIn('status', [RepairStatus::Assigned->value, RepairStatus::Scheduled->value])->count();
