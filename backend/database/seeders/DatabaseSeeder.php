@@ -14,6 +14,7 @@ use App\Models\Membership;
 use App\Models\RepairCategory;
 use App\Models\SharedSpace;
 use App\Models\User;
+use App\Services\AnnouncementService;
 use App\Services\BillSplitter;
 use App\Services\BookingService;
 use App\Services\ChargeGenerator;
@@ -90,6 +91,27 @@ class DatabaseSeeder extends Seeder
         $this->seedBills($building, $landlord);
         $this->seedBookings($building);
         $this->seedRepairs($building, $landlord);
+        $this->seedAnnouncements($building, $landlord);
+    }
+
+    /**
+     * Obvestilo za celo stavbo in obvestilo za 1. nadstropje (US-14).
+     */
+    private function seedAnnouncements(Building $building, User $landlord): void
+    {
+        $service = app(AnnouncementService::class);
+        $thursday = CarbonImmutable::today()->next(CarbonImmutable::THURSDAY);
+
+        $service->publish($building, $landlord, [
+            'title' => 'Zapora vode v četrtek',
+            'body' => "Zaradi menjave glavnega ventila v četrtek, {$thursday->format('j. n.')}, od 8. do 12. ure v celi stavbi ne bo vode.\nProsimo, da si vodo pripravite vnaprej.",
+        ]);
+
+        $service->publish($building, $landlord, [
+            'title' => 'Pleskanje hodnika v 1. nadstropju',
+            'body' => 'Naslednji teden bo pleskar osvežil hodnik v 1. nadstropju. Prosimo, da s hodnika umaknete obutev in predpražnike.',
+            'floor' => 1,
+        ]);
     }
 
     /**
