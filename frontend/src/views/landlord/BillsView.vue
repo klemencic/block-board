@@ -20,7 +20,7 @@ import { formatDate, formatMoney, monthName } from '@/utils/format'
 import { inclusiveDays, residenceBar } from '@/utils/period'
 
 // Wireframe WF-04 »Nova položnica« (US-06, US-07).
-const BUILDING_SCOPE_ENABLED = false
+const BUILDING_SCOPE_ENABLED = true
 
 const auth = useAuthStore()
 const buildingId = computed(() => auth.buildingId!)
@@ -66,6 +66,14 @@ const ready = computed(
     !!form.period_start &&
     !!form.period_end &&
     (form.scope === 'apartment' ? !!form.apartment_id : !!form.split_method),
+)
+
+// Pri položnici za celo stavbo je privzeta delitev po površini.
+watch(
+  () => form.scope,
+  (scope) => {
+    if (scope === 'building' && !form.split_method) form.split_method = 'area'
+  },
 )
 
 const periodDays = computed(() =>

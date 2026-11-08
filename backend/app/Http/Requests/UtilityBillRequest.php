@@ -19,7 +19,7 @@ class UtilityBillRequest extends FormRequest
         $building = $this->route('building');
 
         return [
-            'scope' => ['required', Rule::in(['apartment'])],
+            'scope' => ['required', Rule::in(['apartment', 'building'])],
             'apartment_id' => [
                 'nullable', 'required_if:scope,apartment', 'integer',
                 Rule::exists('apartments', 'id')->where('building_id', $building->id),

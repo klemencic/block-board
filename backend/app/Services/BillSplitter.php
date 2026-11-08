@@ -18,6 +18,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Delitev položnic (US-06, US-07, ADR-0007).
@@ -188,13 +189,44 @@ class BillSplitter
     }
 
     /**
-     * Delitev med stanovanja stavbe (US-07). Implementirano v planBuilding.
+     * Delitev položnice stavbe med stanovanja (US-07, #113, #114):
+     * - po površini: sorazmerno s kvadraturo,
+     * - po številu oseb: sorazmerno z dnevi bivanja vseh najemnikov stanovanja,
+     * - na enake dele: enako za vsako stanovanje.
+     * Delež stanovanja se nato razdeli med sostanovalce po dnevih bivanja (kot US-06),
+     * delež praznega stanovanja ostane lastniku.
      *
      * @return list<array{apartment: Apartment, amount_cents: int, days: int, shares: list<array>}>
      */
     protected function planBuilding(Building $building, int $amountCents, CarbonInterface $start, CarbonInterface $end, SplitMethod $method): array
     {
-        throw new \LogicException('Delitev položnice stavbe še ni podprta.');
+        $apartments = $building->apartments()->orderBy('label')->get();
+
+        if ($method === SplitMethod::Area && $apartments->contains(fn (Apartment $a) => (float) $a->area_m2 <= 0)) {
+            throw ValidationException::withMessages([
+                'split_method' => 'Vsa stanovanja morajo imeti vneseno površino za delitev po površini.',
+            ]);
+        }
+
+        $weights = $apartments->map(fn (Apartment $apartment) => match ($method) {
+            SplitMethod::Area => (int) round((float) $apartment->area_m2 * 100),
+            SplitMethod::Persons => $this->tenantDays($apartment, $start, $end)->sum('days'),
+            SplitMethod::Equal => 1,
+        })->all();
+
+        // Če v obdobju ni živel nihče, se znesek razdeli na enake dele in ostane lastniku.
+        if (array_sum($weights) === 0) {
+            $weights = array_fill(0, count($weights), 1);
+        }
+
+        $amounts = $this->distribute($amountCents, $weights);
+
+        return $apartments->values()
+            ->map(fn (Apartment $apartment, int $i) => $this->splitApartment($apartment, $amounts[$i], $start, $end))
+            // Prazna stanovanja z ničelnim deležem (delitev po osebah) ne potrebujejo zapisa.
+            ->reject(fn (array $row) => $row['amount_cents'] === 0 && $row['days'] === 0)
+            ->values()
+            ->all();
     }
 
     private function chargeDescription(UtilityBill $bill): string

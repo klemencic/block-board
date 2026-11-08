@@ -14,6 +14,7 @@ use App\Models\Membership;
 use App\Models\RepairCategory;
 use App\Models\SharedSpace;
 use App\Models\User;
+use App\Services\BillSplitter;
 use App\Services\ChargeGenerator;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -84,6 +85,30 @@ class DatabaseSeeder extends Seeder
 
         $this->seedLeases($building);
         $this->seedCharges($building);
+        $this->seedBills($building, $landlord);
+    }
+
+    /**
+     * Položnice za pretekli mesec kot v tabeli »Zadnje položnice« (WF-04).
+     */
+    private function seedBills(Building $building, User $landlord): void
+    {
+        $splitter = app(BillSplitter::class);
+        $month = CarbonImmutable::today()->startOfMonth()->subMonth();
+        $period = ['period_start' => $month->toDateString(), 'period_end' => $month->endOfMonth()->toDateString()];
+
+        foreach ([
+            ['type' => 'heating', 'amount_cents' => 126000, 'split_method' => 'area'],
+            ['type' => 'water', 'amount_cents' => 42000, 'split_method' => 'persons'],
+            ['type' => 'waste', 'amount_cents' => 12000, 'split_method' => 'equal'],
+        ] as $bill) {
+            $splitter->store($building, $landlord, [...$bill, ...$period, 'apartment_id' => null]);
+        }
+
+        $splitter->store($building, $landlord, [
+            'type' => 'electricity', 'amount_cents' => 9000, ...$period,
+            'apartment_id' => $building->apartments()->where('label', '2C')->value('id'),
+        ]);
     }
 
     /**
