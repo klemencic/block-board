@@ -8,7 +8,10 @@ use App\Models\Booking;
 use App\Models\Charge;
 use App\Models\RepairRequest;
 use App\Services\ChargeSourceResolver;
+use App\Notifications\AnnouncementPublished;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +28,13 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'repair_request' => RepairRequest::class,
         ]);
+
+        // Sledljiva dostava obvestil: uspešno poslana e-pošta se zapiše pri prejemniku (US-14).
+        Event::listen(NotificationSent::class, function (NotificationSent $event) {
+            if ($event->notification instanceof AnnouncementPublished) {
+                $event->notification->markSent($event->notifiable);
+            }
+        });
 
         $sources = $this->app->make(ChargeSourceResolver::class);
 

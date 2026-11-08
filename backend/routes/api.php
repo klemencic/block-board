@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\ApartmentController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\RepairActionController;
@@ -46,6 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/repair-requests/{repair}/return', [RepairActionController::class, 'returnForRework']);
     Route::get('/repair-requests/{repair}/payer-candidates', [RepairActionController::class, 'payerCandidates']);
     Route::post('/repair-requests/{repair}/close', [RepairActionController::class, 'close']);
+
+    Route::get('/buildings/{building}/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/buildings/{building}/announcements', [AnnouncementController::class, 'store']);
+    Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 
     Route::get('/buildings/{building}/utility-bills', [UtilityBillController::class, 'index']);
     Route::post('/buildings/{building}/utility-bills/preview', [UtilityBillController::class, 'preview']);
