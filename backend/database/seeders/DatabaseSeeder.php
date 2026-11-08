@@ -7,12 +7,15 @@ use App\Enums\Payer;
 use App\Enums\Role;
 use App\Models\Apartment;
 use App\Models\Building;
+use App\Models\Charge;
 use App\Models\Lease;
 use App\Models\LeaseTenant;
 use App\Models\Membership;
 use App\Models\RepairCategory;
 use App\Models\SharedSpace;
 use App\Models\User;
+use App\Services\ChargeGenerator;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 /**
@@ -80,6 +83,41 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->seedLeases($building);
+        $this->seedCharges($building);
+    }
+
+    /**
+     * Obveznosti za zadnje tri mesece. Pretekle so plačane, razen zamud kot v wireframu:
+     * 2A (Luka Novak) 300,00 €, 3A (Maja Kos) 2 × 330,00 € = 660,00 €.
+     */
+    private function seedCharges(Building $building): void
+    {
+        $generator = app(ChargeGenerator::class);
+        $today = CarbonImmutable::today();
+        $unpaidMonths = ['luka@blockboard.test' => 1, 'maja@blockboard.test' => 2];
+
+        foreach ([2, 1, 0] as $monthsAgo) {
+            $period = $today->startOfMonth()->subMonths($monthsAgo);
+            // Zadnji dan meseca, da nastanejo tudi sorazmerni deli za vselitve med mesecem.
+            $date = $monthsAgo === 0 ? $today : $period->endOfMonth();
+
+            Lease::occupying()
+                ->whereHas('apartment', fn ($q) => $q->where('building_id', $building->id))
+                ->get()
+                ->each(fn (Lease $lease) => $generator->generateForLease($lease, $date));
+
+            if ($monthsAgo === 0) {
+                continue;
+            }
+
+            Charge::whereDate('period', $period)->with('leaseTenant.user')->get()
+                ->each(function (Charge $charge) use ($unpaidMonths, $monthsAgo) {
+                    if (($unpaidMonths[$charge->leaseTenant->user->email] ?? 0) >= $monthsAgo) {
+                        return;
+                    }
+                    $charge->update(['paid_at' => $charge->due_date->copy()->subDays(2)]);
+                });
+        }
     }
 
     /**
@@ -95,10 +133,10 @@ class DatabaseSeeder extends Seeder
             // stanovanje, najemniki [ime, e-naslov, telefon], najemnina, začetek, konec, stanje
             ['1A', [['Ana Kovač', 'ana@blockboard.test', '040 111 001']], 52000, '-14 months', null, LeaseStatus::Active],
             ['1B', [['Marko Zupan', 'marko@blockboard.test', '040 111 002']], 42000, '-11 months', '+22 days', LeaseStatus::Active],
-            ['2A', [['Luka Novak', 'luka@blockboard.test', '040 111 003'], ['Eva Horvat', 'eva@blockboard.test', '040 111 004']], 75000, '-20 months', null, LeaseStatus::Active],
+            ['2A', [['Luka Novak', 'luka@blockboard.test', '040 111 003'], ['Eva Horvat', 'eva@blockboard.test', '040 111 004']], 60000, '-20 months', null, LeaseStatus::Active],
             ['2B', [['Tina Krajnc', 'tina@blockboard.test', '040 111 005']], 45000, '-9 months', null, LeaseStatus::InNotice],
             ['2C', [['Jan Potočnik', 'jan@blockboard.test', '040 123 456'], ['Nik Golob', 'nik@blockboard.test', '040 111 006'], ['Sara Mlakar', 'sara@blockboard.test', '040 111 007']], 90000, '-4 months', '+10 months', LeaseStatus::Active],
-            ['3A', [['Maja Kos', 'maja@blockboard.test', '040 111 008']], 60000, '-6 months', '+9 months', LeaseStatus::Active],
+            ['3A', [['Maja Kos', 'maja@blockboard.test', '040 111 008']], 33000, '-6 months', '+9 months', LeaseStatus::Active],
             ['3B', [['Peter Vidmar', 'peter@blockboard.test', '040 111 009']], 52000, '-30 months', null, LeaseStatus::Active],
             ['4A', [['Nina Bizjak', 'nina@blockboard.test', '040 111 010'], ['Rok Turk', 'rok@blockboard.test', '040 111 011']], 80000, '-23 months', '+37 days', LeaseStatus::Active],
             ['4B', [['Gregor Kralj', 'gregor@blockboard.test', '040 111 012']], 55000, '-8 months', null, LeaseStatus::Active],
