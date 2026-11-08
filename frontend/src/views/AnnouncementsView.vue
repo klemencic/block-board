@@ -3,7 +3,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusChip from '@/components/StatusChip.vue'
-import { announcementsApi, type Announcement } from '@/api/announcements'
+import BaseModal from '@/components/BaseModal.vue'
+import { announcementsApi, type Announcement, type UninformedApartment } from '@/api/announcements'
+import { useBadgesStore } from '@/stores/badges'
 import { leasesApi } from '@/api/leases'
 import { validationErrors, type ValidationErrors } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
@@ -11,6 +13,7 @@ import { formatDateTime } from '@/utils/format'
 
 // Novice in obvestila (US-14).
 const auth = useAuthStore()
+const badges = useBadgesStore()
 const route = useRoute()
 const isLandlord = computed(() => auth.role === 'landlord')
 
@@ -58,6 +61,27 @@ async function publish() {
 }
 
 const floorLabel = (floor: number) => (floor === 0 ? 'Pritličje' : `${floor}. nadstropje`)
+
+// Potrditev branja (US-15)
+async function confirmRead(a: Announcement) {
+  busy.value = true
+  try {
+    const updated = await announcementsApi.confirmRead(a.id)
+    announcements.value = announcements.value.map((x) => (x.id === a.id ? { ...x, read_at: updated.read_at } : x))
+    badges.set('/obvestila', announcements.value.filter((x) => !x.read_at).length)
+  } finally {
+    busy.value = false
+  }
+}
+
+const uninformedFor = ref<Announcement | null>(null)
+const uninformed = ref<UninformedApartment[] | null>(null)
+
+async function showUninformed(a: Announcement) {
+  uninformedFor.value = a
+  uninformed.value = null
+  uninformed.value = await announcementsApi.uninformed(a.id)
+}
 </script>
 
 <template>
@@ -84,6 +108,8 @@ const floorLabel = (floor: number) => (floor === 0 ? 'Pritličje' : `${floor}. n
               E-pošta: {{ a.delivery.sent }} / {{ a.delivery.recipients }}
               <StatusChip v-if="a.delivery.failed" tone="danger" class="ml-2">{{ a.delivery.failed }} neuspešno</StatusChip>
             </div>
+            <StatusChip v-else-if="a.read_at" tone="success">Prebrano</StatusChip>
+            <StatusChip v-else tone="primary">Novo</StatusChip>
           </div>
           <p v-if="openId !== a.id" class="mt-2 line-clamp-2 text-muted">{{ a.body }}</p>
         </button>
@@ -91,8 +117,45 @@ const floorLabel = (floor: number) => (floor === 0 ? 'Pritličje' : `${floor}. n
           <p class="text-[16px] leading-relaxed whitespace-pre-line">{{ a.body }}</p>
           <p class="mt-4 text-sm text-muted">Objavil {{ a.author }}</p>
         </div>
+
+        <!-- Najemnik: potrditev branja (US-15, #136) -->
+        <div v-if="!isLandlord" class="mt-4 flex items-center justify-between gap-4 border-t border-line pt-4">
+          <p v-if="a.read_at" class="text-sm text-muted">Branje ste potrdili {{ formatDateTime(a.read_at) }}.</p>
+          <button v-else class="btn btn-primary" :disabled="busy" @click="confirmRead(a)">Potrjujem, da sem prebral</button>
+        </div>
+
+        <!-- Lastnik: obveščenost stanovanj (US-15, #137) -->
+        <div v-if="a.informed" class="mt-4 flex items-center justify-between gap-4 border-t border-line pt-4">
+          <span class="text-sm text-muted">Obveščenost stanovanj</span>
+          <button
+            class="rounded-full px-4 py-1 text-[15px] font-semibold"
+            :class="a.informed.informed === a.informed.total ? 'bg-[#e7f4ec] text-success' : 'bg-primary-soft text-primary hover:underline'"
+            @click="showUninformed(a)"
+          >
+            {{ a.informed.informed }} od {{ a.informed.total }} stanovanj
+          </button>
+        </div>
       </article>
     </section>
+
+    <BaseModal
+      v-if="uninformedFor"
+      eyebrow="Branja še niso potrdila"
+      :title="uninformedFor.title"
+      @close="uninformedFor = null"
+    >
+      <p v-if="uninformed === null" class="text-muted">Nalagam …</p>
+      <p v-else-if="uninformed.length === 0" class="text-success">Vsa stanovanja so obveščena.</p>
+      <ul v-else class="divide-y divide-line">
+        <li v-for="apt in uninformed" :key="apt.id" class="py-3">
+          <p class="font-semibold">Stanovanje {{ apt.label }} <span class="font-normal text-muted">· {{ floorLabel(apt.floor) }}</span></p>
+          <p v-for="t in apt.tenants" :key="t.name" class="flex justify-between text-[15px]">
+            <span>{{ t.name }}</span>
+            <a v-if="t.phone" :href="`tel:${t.phone}`" class="font-mono text-primary">{{ t.phone }}</a>
+          </p>
+        </li>
+      </ul>
+    </BaseModal>
 
     <!-- Lastnik: nova objava (US-14, #133) -->
     <aside v-if="isLandlord" class="card-strong h-fit p-7">
