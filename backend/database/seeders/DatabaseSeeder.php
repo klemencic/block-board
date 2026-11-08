@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Enums\LeaseStatus;
 use App\Enums\Payer;
 use App\Enums\Role;
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\Apartment;
 use App\Models\Building;
 use App\Models\Charge;
@@ -106,6 +108,18 @@ class DatabaseSeeder extends Seeder
             'title' => 'Zapora vode v četrtek',
             'body' => "Zaradi menjave glavnega ventila v četrtek, {$thursday->format('j. n.')}, od 8. do 12. ure v celi stavbi ne bo vode.\nProsimo, da si vodo pripravite vnaprej.",
         ]);
+
+        $water = Announcement::where('building_id', $building->id)->latest('id')->first();
+
+        // Branje potrdi 7 od 10 zasedenih stanovanj (US-15). Jan (2C) ima obe obvestili neprebrani,
+        // zato v meniju vidi številko 2 kot v wireframih; 2C je obveščeno prek sostanovalca Nika.
+        foreach (['ana', 'marko', 'luka', 'nik', 'maja', 'peter', 'gregor'] as $name) {
+            AnnouncementRead::create([
+                'announcement_id' => $water->id,
+                'user_id' => User::where('email', "$name@blockboard.test")->value('id'),
+                'read_at' => now()->subHours(rand(1, 20)),
+            ]);
+        }
 
         $service->publish($building, $landlord, [
             'title' => 'Pleskanje hodnika v 1. nadstropju',
