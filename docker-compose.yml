@@ -1,0 +1,63 @@
+name: blockboard
+
+x-php: &php
+  build: ./docker/php
+  image: blockboard-php
+  volumes:
+    - ./backend:/var/www/backend
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  api:
+    <<: *php
+    command: sh -c "[ -f vendor/autoload.php ] || composer install --no-interaction; php artisan serve --host=0.0.0.0 --port=8000"
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *php
+    command: sh -c "until [ -f vendor/autoload.php ]; do sleep 5; done; php artisan schedule:work & php artisan queue:work --tries=3 --sleep=3"
+    restart: unless-stopped
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: blockboard
+      POSTGRES_USER: blockboard
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blockboard -d blockboard"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  web:
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    volumes:
+      - ./frontend:/app
+      - web-node-modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+  mail:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  db-data:
+  web-node-modules:

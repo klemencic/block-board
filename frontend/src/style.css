@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+/* Oblikovni žetoni po wireframih (docs/wireframes). */
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-canvas: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-line: #e3e1db;
+  --color-line-strong: #1c1d21;
+  --color-ink: #1c1d21;
+  --color-muted: #6b6a66;
+  --color-subtle: #ecebe6;
+
+  --color-sidebar: #1e1f23;
+  --color-sidebar-active: #2e3036;
+  --color-sidebar-text: #e9e8e4;
+  --color-sidebar-muted: #a3a29d;
+
+  --color-primary: #2546c8;
+  --color-primary-dark: #1c38a6;
+  --color-primary-soft: #eef1fd;
+  --color-badge: #6b8cff;
+
+  --color-danger: #a4370b;
+  --color-danger-soft: #fbece4;
+  --color-danger-row: #fdf6f1;
+  --color-warning: #7a5a00;
+  --color-warning-soft: #fdf3d8;
+  --color-success: #1f7a3d;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface;
+  }
+  .card-strong {
+    @apply rounded-xl border-2 border-line-strong bg-surface;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[15px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  /* Uporaba: class="btn btn-primary" */
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+  .btn-secondary {
+    @apply border border-line bg-surface text-ink hover:bg-subtle;
+  }
+  .btn-danger {
+    @apply border border-line bg-surface text-danger hover:bg-danger-soft;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-semibold;
+  }
+  .field-input {
+    @apply w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[15px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20;
+  }
+  .field-error {
+    @apply mt-1 text-sm text-danger;
+  }
+  .eyebrow {
+    @apply text-xs font-medium tracking-[0.12em] text-muted uppercase;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full bg-subtle px-3 py-0.5 text-sm;
+  }
+  .table-head {
+    @apply px-6 py-3 text-left text-xs font-medium tracking-[0.1em] text-muted uppercase;
+  }
+}

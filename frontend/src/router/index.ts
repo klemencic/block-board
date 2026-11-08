@@ -1,0 +1,49 @@
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import AppLayout from '@/layouts/AppLayout.vue'
+import { homeFor } from '@/navigation'
+import { useAuthStore, type Role } from '@/stores/auth'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    title?: string
+    roles?: Role[]
+    public?: boolean
+  }
+}
+
+const soon = () => import('@/views/ComingSoonView.vue')
+
+const appRoutes: RouteRecordRaw[] = [
+  { path: 'pregled', component: soon, meta: { title: 'Pregled stavbe', roles: ['landlord'] } },
+  { path: 'najemi', component: soon, meta: { title: 'Najemi', roles: ['landlord'] } },
+  { path: 'obveznosti', component: soon, meta: { title: 'Obveznosti', roles: ['landlord'] } },
+  { path: 'poloznice', component: soon, meta: { title: 'Položnice', roles: ['landlord'] } },
+  { path: 'register', component: soon, meta: { title: 'Register najemnikov', roles: ['landlord'] } },
+  { path: 'moj-najem', component: soon, meta: { title: 'Moj najem', roles: ['tenant'] } },
+  { path: 'moje-obveznosti', component: soon, meta: { title: 'Moje obveznosti', roles: ['tenant'] } },
+  { path: 'prostori', component: soon, meta: { title: 'Skupni prostori', roles: ['landlord', 'tenant'] } },
+  { path: 'okvare', component: soon, meta: { title: 'Okvare', roles: ['landlord', 'tenant'] } },
+  { path: 'nalogi', component: soon, meta: { title: 'Moji nalogi', roles: ['contractor'] } },
+  { path: 'obvestila', component: soon, meta: { title: 'Obvestila', roles: ['landlord', 'tenant'] } },
+]
+
+export const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: '/prijava', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
+    { path: '/', component: AppLayout, children: appRoutes },
+    { path: '/:pathMatch(.*)*', redirect: '/' },
+  ],
+})
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  if (!auth.loaded) await auth.fetchUser()
+
+  if (to.meta.public) return auth.user ? homeFor(auth.role) : true
+  if (!auth.user) return '/prijava'
+  if (to.path === '/') return homeFor(auth.role)
+  // SPA skriva strani zaradi preglednosti, pravice dejansko preveri API.
+  if (to.meta.roles && auth.role && !to.meta.roles.includes(auth.role)) return homeFor(auth.role)
+  return true
+})
