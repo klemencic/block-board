@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\ChargeType;
+use App\Enums\LeaseStatus;
 use App\Enums\Payer;
 use App\Enums\RepairStatus;
 use App\Enums\Role;
 use App\Exceptions\WorkflowException;
 use App\Models\Attachment;
 use App\Models\Building;
+use App\Models\Charge;
+use App\Models\LeaseTenant;
+use App\Support\Dates;
 use App\Models\RepairCategory;
 use App\Models\RepairEvent;
 use App\Models\RepairRequest;
@@ -15,6 +20,7 @@ use App\Models\User;
 use App\Notifications\RepairAssigned;
 use App\Notifications\RepairCompleted;
 use App\Notifications\RepairReported;
+use App\Notifications\RepairReturned;
 use App\Notifications\RepairScheduled;
 use App\Notifications\RepairStatusChanged;
 use App\Support\Money;
@@ -180,6 +186,85 @@ class RepairWorkflow
         Notification::send($this->landlords($repair->building_id), new RepairCompleted($repair));
 
         return $repair;
+    }
+
+    /**
+     * Lastnik vrne opravljeno delo v popravek z obvezno obrazložitvijo (US-12, #128).
+     * Izvajalec prejme e-pošto, nalog je spet v stanju »dogovorjen termin«.
+     */
+    public function returnForRework(RepairRequest $repair, User $landlord, string $reason): RepairRequest
+    {
+        $repair = $this->step($repair, $landlord, [RepairStatus::Done], RepairStatus::Scheduled, [], $reason);
+
+        $repair->contractor->notify(new RepairReturned($repair, $reason));
+
+        return $repair;
+    }
+
+    /**
+     * Najemniki, ki jim lahko lastnik ob zaključku zaračuna popravilo, s privzeto izbiro (US-12, #129).
+     *
+     * @return \Illuminate\Support\Collection<int, array{tenant: LeaseTenant, default: bool}>
+     */
+    public function payerCandidates(RepairRequest $repair)
+    {
+        $tenants = LeaseTenant::query()
+            ->whereNull('moved_out_on')
+            ->whereHas('lease', fn ($q) => $q->whereIn('status', LeaseStatus::occupying())
+                ->when($repair->apartment_id,
+                    fn ($q) => $q->where('apartment_id', $repair->apartment_id),
+                    fn ($q) => $q->whereHas('apartment', fn ($q) => $q->where('building_id', $repair->building_id))))
+            ->with('user', 'lease.apartment')
+            ->orderBy('id')
+            ->get();
+
+        // Privzeto je izbran prijavitelj, če je okvaro prijavil najemnik.
+        return $tenants->map(fn (LeaseTenant $t) => ['tenant' => $t, 'default' => $t->user_id === $repair->reported_by]);
+    }
+
+    /**
+     * Lastnik zaključi prijavo (US-12, #127, #129). Če je plačnik najemnik, izbrani najemnik
+     * dobi obveznost vrste »popravilo« v višini stroška k obračunu naslednjega meseca.
+     */
+    public function close(RepairRequest $repair, User $landlord, ?int $leaseTenantId = null): RepairRequest
+    {
+        $payerTenant = null;
+
+        if ($repair->payer === Payer::Tenant) {
+            $candidates = $this->payerCandidates($repair);
+            $payerTenant = $leaseTenantId
+                ? $candidates->first(fn ($c) => $c['tenant']->id === $leaseTenantId)['tenant'] ?? null
+                : $candidates->firstWhere('default', true)['tenant'] ?? null;
+
+            if (! $payerTenant) {
+                throw ValidationException::withMessages([
+                    'lease_tenant_id' => 'Izberite najemnika, ki plača strošek popravila.',
+                ]);
+            }
+        }
+
+        return DB::transaction(function () use ($repair, $landlord, $payerTenant) {
+            $repair = $this->step($repair, $landlord, [RepairStatus::Done], RepairStatus::Closed, [
+                'closed_at' => now(),
+                'payer_lease_tenant_id' => $payerTenant?->id,
+            ], $payerTenant ? 'strošek '.Money::format($repair->cost_cents).' plača '.$payerTenant->user->name : 'strošek krije lastnik');
+
+            // Plačnik lastnik: obveznost ne nastane, strošek ostane viden v prijavi.
+            if ($payerTenant && $repair->cost_cents > 0) {
+                $period = Dates::nextPeriod(today());
+                Charge::create([
+                    'lease_tenant_id' => $payerTenant->id,
+                    'type' => ChargeType::Repair,
+                    'description' => "Popravilo {$repair->number()}: {$repair->title}",
+                    'amount_cents' => $repair->cost_cents,
+                    'period' => $period,
+                    'due_date' => Dates::dueDate($period, $repair->building->rent_due_day),
+                    'repair_request_id' => $repair->id,
+                ]);
+            }
+
+            return $repair;
+        });
     }
 
     /**

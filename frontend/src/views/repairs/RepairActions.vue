@@ -5,6 +5,7 @@ import { repairsApi, type Payer, type Repair } from '@/api/repairs'
 import { useAuthStore } from '@/stores/auth'
 import MoneyInput from '@/components/MoneyInput.vue'
 import { photoErrors } from '@/utils/photos'
+import { formatMoney } from '@/utils/format'
 
 // Plošča »Vaš korak« po wireframu WF-03 (US-10). Koraki izvajalca in zaključek sledijo v US-11 in US-12.
 const props = defineProps<{ repair: Repair }>()
@@ -61,6 +62,22 @@ function confirmAndAssign() {
     run('assign', { contractor_id: contractorId.value })
   }
 }
+
+// Lastnik: zaključek (US-12)
+const returning = ref(false)
+const candidates = ref<{ id: number; name: string; apartment: string; default: boolean }[]>([])
+const payerTenantId = ref<number | null>(null)
+
+watch(
+  () => [props.repair.status, props.repair.payer],
+  async () => {
+    if (isLandlord.value && props.repair.status === 'done' && props.repair.payer === 'tenant' && candidates.value.length === 0) {
+      candidates.value = (await http.get(`/api/repair-requests/${props.repair.id}/payer-candidates`)).data.data
+      payerTenantId.value = candidates.value.find((c) => c.default)?.id ?? candidates.value[0]?.id ?? null
+    }
+  },
+  { immediate: true },
+)
 
 // Izvajalec (US-11)
 const performStep = computed(() => props.repair.permissions.perform && ['assigned', 'scheduled'].includes(props.repair.status))
@@ -206,7 +223,60 @@ const payerOptions: { value: Payer; label: string }[] = [
       </button>
     </section>
 
-    <section v-if="!canDecide && !performStep" class="card p-7 text-[15px] text-muted">
+    <!-- Lastnik: pregled izvedbe, zaključek ali vrnitev v popravek (US-12) -->
+    <section v-if="isLandlord && repair.status === 'done'" class="card-strong p-7">
+      <p class="eyebrow">Vaš korak</p>
+      <h2 class="mt-1 text-[28px] font-semibold">Preglej izvedbo</h2>
+      <dl class="mt-5 space-y-3 text-[16px]">
+        <div class="flex justify-between"><dt class="text-muted">Izvajalec</dt><dd>{{ repair.contractor?.name }}</dd></div>
+        <div class="flex justify-between">
+          <dt class="text-muted">Strošek</dt><dd class="font-mono font-semibold">{{ formatMoney(repair.cost_cents ?? 0) }}</dd>
+        </div>
+        <div class="flex justify-between"><dt class="text-muted">Plačnik</dt><dd class="first-letter:uppercase">{{ repair.payer_label }}</dd></div>
+      </dl>
+
+      <template v-if="repair.payer === 'tenant'">
+        <label class="field-label mt-5" for="payer_tenant">Strošek plača</label>
+        <select id="payer_tenant" v-model="payerTenantId" class="field-input">
+          <option v-for="c in candidates" :key="c.id" :value="c.id">{{ c.name }} · {{ c.apartment }}</option>
+        </select>
+        <p class="mt-2 text-sm text-muted">
+          Izbrani najemnik dobi obveznost vrste »popravilo« k obračunu naslednjega meseca.
+        </p>
+      </template>
+      <p v-else class="mt-4 text-sm text-muted">Strošek krije lastnik, obveznost ne nastane.</p>
+
+      <p v-if="error" class="mt-4 rounded-lg bg-danger-soft p-3 text-danger">{{ error }}</p>
+
+      <button
+        class="btn btn-primary mt-6 w-full py-3.5 text-lg"
+        :disabled="busy || (repair.payer === 'tenant' && !payerTenantId)"
+        @click="run('close', { lease_tenant_id: repair.payer === 'tenant' ? payerTenantId : null })"
+      >
+        Zaključi
+      </button>
+      <div v-if="returning" class="mt-4">
+        <label class="field-label" for="return_reason">Obrazložitev za izvajalca</label>
+        <textarea id="return_reason" v-model="reason" rows="3" class="field-input" />
+        <div class="mt-3 flex gap-3">
+          <button class="btn btn-secondary flex-1" @click="returning = false">Prekliči</button>
+          <button class="btn btn-danger flex-1" :disabled="busy" @click="run('return', { reason })">Vrni v popravek</button>
+        </div>
+      </div>
+      <button v-else class="btn btn-danger mt-3 w-full py-3 text-lg" @click="returning = true">Vrni v popravek…</button>
+    </section>
+
+    <section v-if="repair.status === 'closed'" class="card p-7">
+      <p class="eyebrow">Zaključeno</p>
+      <p class="mt-2 text-[15px]">
+        Prijava je zaključena in je ni več mogoče spreminjati.
+        <template v-if="repair.cost_cents !== null">
+          Strošek {{ formatMoney(repair.cost_cents) }} krije {{ repair.payer === 'tenant' ? 'najemnik' : 'lastnik' }}.
+        </template>
+      </p>
+    </section>
+
+    <section v-if="!canDecide && !performStep && !['done', 'closed'].includes(repair.status)" class="card p-7 text-[15px] text-muted">
       <p class="eyebrow">Stanje</p>
       <p class="mt-2">Prijava je v stanju »{{ repair.status_label }}«. O vsaki spremembi boste obveščeni po e-pošti.</p>
     </section>
