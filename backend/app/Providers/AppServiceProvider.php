@@ -61,6 +61,22 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Prijava okvare, katere strošek bremeni najemnika (US-12).
+        $sources->register(ChargeType::Repair, function (Charge $charge): ?array {
+            $repair = RepairRequest::find($charge->repair_request_id);
+            if (! $repair) {
+                return null;
+            }
+
+            return [
+                'id' => $repair->id,
+                'number' => $repair->number(),
+                'title' => $repair->title,
+                'status_label' => $repair->status->label(),
+                'cost_cents' => $repair->cost_cents,
+            ];
+        });
+
         // Rezervacija skupnega prostora (US-08).
         $sources->register(ChargeType::Booking, function (Charge $charge): ?array {
             $booking = Booking::with('space')->find($charge->booking_id);

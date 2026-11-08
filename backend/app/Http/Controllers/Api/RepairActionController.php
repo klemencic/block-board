@@ -136,6 +136,43 @@ class RepairActionController extends Controller
         return $this->respond($repair);
     }
 
+    /** Lastnik vrne opravljeno delo v popravek (US-12). */
+    public function returnForRework(Request $request, RepairRequest $repair): RepairRequestResource
+    {
+        Gate::authorize('manage', $repair);
+        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']], [
+            'reason.required' => 'Pri vrnitvi v popravek je obrazložitev obvezna.',
+        ]);
+
+        $this->workflow->returnForRework($repair, $request->user(), $data['reason']);
+
+        return $this->respond($repair);
+    }
+
+    /** Najemniki, ki jim je mogoče zaračunati popravilo (US-12). */
+    public function payerCandidates(RepairRequest $repair): JsonResponse
+    {
+        Gate::authorize('manage', $repair);
+
+        return response()->json(['data' => $this->workflow->payerCandidates($repair)->map(fn ($c) => [
+            'id' => $c['tenant']->id,
+            'name' => $c['tenant']->user->name,
+            'apartment' => $c['tenant']->lease->apartment->label,
+            'default' => $c['default'],
+        ])->values()]);
+    }
+
+    /** Lastnik zaključi prijavo (US-12). */
+    public function close(Request $request, RepairRequest $repair): RepairRequestResource
+    {
+        Gate::authorize('manage', $repair);
+        $data = $request->validate(['lease_tenant_id' => ['nullable', 'integer']], [], ['lease_tenant_id' => 'najemnik']);
+
+        $this->workflow->close($repair, $request->user(), $data['lease_tenant_id'] ?? null);
+
+        return $this->respond($repair);
+    }
+
     private function respond(RepairRequest $repair): RepairRequestResource
     {
         return RepairRequestResource::make($repair->refresh()->load(self::RELATIONS));
