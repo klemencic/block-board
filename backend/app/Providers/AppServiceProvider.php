@@ -6,7 +6,9 @@ use App\Enums\ChargeType;
 use App\Models\BillShare;
 use App\Models\Booking;
 use App\Models\Charge;
+use App\Models\RepairRequest;
 use App\Services\ChargeSourceResolver;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Kratka imena v polimorfnih povezavah (priloge).
+        Relation::enforceMorphMap([
+            'repair_request' => RepairRequest::class,
+        ]);
+
         $sources = $this->app->make(ChargeSourceResolver::class);
 
         // Položnica z izračunom deleža; deleži drugih stanovanj niso vključeni (US-06, US-07).

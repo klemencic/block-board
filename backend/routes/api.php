@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\ApartmentController;
+use App\Http\Controllers\Api\AttachmentController;
+use App\Http\Controllers\Api\RepairRequestController;
 use App\Http\Controllers\Api\BuildingChargeController;
 use App\Http\Controllers\Api\ChargeController;
 use App\Http\Controllers\Api\InvitationController;
@@ -26,6 +28,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buildings/{building}/shared-spaces', [SharedSpaceController::class, 'index']);
     Route::get('/shared-spaces/{space}/availability', [SharedSpaceController::class, 'availability']);
     Route::post('/shared-spaces/{space}/bookings', [SharedSpaceController::class, 'book']);
+
+    Route::get('/buildings/{building}/repair-requests', [RepairRequestController::class, 'index']);
+    Route::get('/buildings/{building}/repair-form', [RepairRequestController::class, 'form']);
+    Route::post('/buildings/{building}/repair-requests', [RepairRequestController::class, 'store']);
+    Route::get('/repair-requests/{repair}', [RepairRequestController::class, 'show']);
+    Route::get('/attachments/{attachment}', [AttachmentController::class, 'show']);
 
     Route::get('/buildings/{building}/utility-bills', [UtilityBillController::class, 'index']);
     Route::post('/buildings/{building}/utility-bills/preview', [UtilityBillController::class, 'preview']);
