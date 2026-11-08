@@ -53,7 +53,12 @@ const appRoutes: RouteRecordRaw[] = [
     meta: { roles: ['landlord', 'tenant', 'contractor'] },
   },
   { path: 'nalogi', component: () => import('@/views/repairs/RepairsView.vue'), meta: { roles: ['contractor'] } },
-  { path: 'obvestila', component: soon, meta: { title: 'Obvestila', roles: ['landlord', 'tenant'] } },
+  { path: 'obvestila', component: () => import('@/views/AnnouncementsView.vue'), meta: { roles: ['landlord', 'tenant'] } },
+  {
+    path: 'obvestila/:id(\\d+)',
+    component: () => import('@/views/AnnouncementsView.vue'),
+    meta: { roles: ['landlord', 'tenant'] },
+  },
 ]
 
 export const router = createRouter({
